@@ -1,0 +1,84 @@
+@test
+module functions_test
+use static_library_1___functions, only: abs_x, neg_x
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine abs_x_test_positive_x()
+  implicit none (type, external)
+    real(dp) :: x
+
+    x = 1d0
+
+    call assertEqual(1d0, abs_x(x))
+  end subroutine abs_x_test_positive_x
+  @test
+  subroutine abs_x_test_negative_x()
+  implicit none (type, external)
+    real(dp) :: x
+
+    x = - 1d0
+
+    call assertEqual(1d0, abs_x(x))
+  end subroutine abs_x_test_negative_x
+
+  @test
+  subroutine neg_x_test_positive_x()
+  implicit none (type, external)
+    real(dp) :: x
+
+    x = 1d0
+
+    call assertEqual(- 1d0, neg_x(x))
+  end subroutine neg_x_test_positive_x
+  @test
+  subroutine neg_x_test_negative_x()
+  implicit none (type, external)
+    real(dp) :: x
+
+    x = - 1d0
+
+    call assertEqual(1d0, neg_x(x))
+  end subroutine neg_x_test_negative_x
+
+
+
+
+
+  ! @setup
+  ! subroutine BeforeEach()
+  ! implicit none (type, external)
+  ! print *, "Before each test"
+  ! end subroutine BeforeEach
+
+  ! @teardown
+  ! subroutine AfterEach()
+  ! implicit none (type, external)
+  ! print *, "After each test"
+  ! end subroutine AfterEach
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module functions_test

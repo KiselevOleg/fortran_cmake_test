@@ -1,0 +1,286 @@
+@test
+module dynamic_array_test
+use system___dynamic_array, only: dynamic_array_real64, dynamic_array_real64_constructor, &
+  dynamic_array_int32, dynamic_array_int32_constructor, &
+  dynamic_array_complex64, dynamic_array_complex64_constructor
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+  character(len = *), parameter :: module_name = "system___dynamic_array_test"
+
+contains
+
+  @test
+  subroutine dynamic_array_real64_test_common()
+  implicit none (type, external)
+    type(dynamic_array_real64) :: array
+
+    real(dp) :: res(100)
+    real(dp), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_real64_constructor()
+
+    call assertEqual(0, array%get_size())
+
+    call array%add_last(1d0) ! 1
+    call assertEqual(1, array%get_size())
+
+    call array%add_last(1d0) ! 1 1
+    call assertEqual(1d0, array%get_value(1))
+
+    call array%add_last(1d0) ! 1 1 1
+    call array%add_last(3d0) ! 1 1 1 3
+    call array%set_value(1, 10d0) ! 10 1 1 3
+    call array%add_last(0d0) ! 10 1 1 3 0
+    call array%set_value(2, - 1d0) ! 10 -1 1 3 0
+    call array%add_last(5d0) ! 10 -1 1 3 0 5
+    call array%delete_last() ! 10 -1 1 3 0
+
+    res(1:5) = [10, - 1, 1, 3, 0]
+    call assertEqual(5, array%get_size())
+    do i = 1, 5
+      call assertEqual(res(i), array%get_value(i))
+    end do
+
+    call array%reserve(1)
+    call array%reserve(10)
+
+    raw_array = array%get_raw_array()
+
+    call assertEqual(5, size(raw_array))
+    do i = 1, 5
+      call assertEqual(res(i), raw_array(i))
+    end do
+  end subroutine dynamic_array_real64_test_common
+
+  @test
+  subroutine dynamic_array_real64_test_reserve_and_size()
+  implicit none (type, external)
+    type(dynamic_array_real64) :: array
+
+    real(dp), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_real64_constructor(reserve = 10)
+
+    do i = 1, 10000
+      call array%add_last(1d0)
+    end do
+    raw_array = array%get_raw_array()
+
+    call assertEqual(10000, size(raw_array))
+
+    call array%reserve(100000)
+
+    call array%add_last(2d0)
+
+    raw_array = array%get_raw_array()
+    call assertEqual(10001, size(raw_array))
+
+    call array%delete_last()
+    call array%delete_last()
+    raw_array = array%get_raw_array()
+    call assertEqual(9999, size(raw_array))
+  end subroutine dynamic_array_real64_test_reserve_and_size
+
+
+
+
+
+
+
+
+
+
+
+  @test
+  subroutine dynamic_array_int32_test_common()
+  implicit none (type, external)
+    type(dynamic_array_int32) :: array
+
+    integer(i4) :: res(100)
+    integer(i4), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_int32_constructor()
+
+    call assertEqual(0, array%get_size())
+
+    call array%add_last(1) ! 1
+    call assertEqual(1, array%get_size())
+
+    call array%add_last(1) ! 1 1
+    call assertEqual(1, array%get_value(1))
+
+    call array%add_last(1) ! 1 1 1
+    call array%add_last(3) ! 1 1 1 3
+    call array%set_value(1, 10) ! 10 1 1 3
+    call array%add_last(0) ! 10 1 1 3 0
+    call array%set_value(2, - 1) ! 10 -1 1 3 0
+    call array%add_last(5) ! 10 -1 1 3 0 5
+    call array%delete_last() ! 10 -1 1 3 0
+
+    res(1:5) = [10, - 1, 1, 3, 0]
+    call assertEqual(5, array%get_size())
+    do i = 1, 5
+      call assertEqual(res(i), array%get_value(i))
+    end do
+
+    call array%reserve(1)
+    call array%reserve(10)
+
+    raw_array = array%get_raw_array()
+
+    call assertEqual(5, size(raw_array))
+    do i = 1, 5
+      call assertEqual(res(i), raw_array(i))
+    end do
+  end subroutine dynamic_array_int32_test_common
+
+  @test
+  subroutine dynamic_array_int32_test_reserve_and_size()
+  implicit none (type, external)
+    type(dynamic_array_int32) :: array
+
+    integer(i4), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_int32_constructor(reserve = 10)
+
+    do i = 1, 10000
+      call array%add_last(1)
+    end do
+    raw_array = array%get_raw_array()
+
+    call assertEqual(10000, size(raw_array))
+
+    call array%reserve(100000)
+
+    call array%add_last(2)
+
+    raw_array = array%get_raw_array()
+    call assertEqual(10001, size(raw_array))
+
+    call array%delete_last()
+    call array%delete_last()
+    raw_array = array%get_raw_array()
+    call assertEqual(9999, size(raw_array))
+  end subroutine dynamic_array_int32_test_reserve_and_size
+
+
+
+
+
+
+
+
+
+
+
+  @test
+  subroutine dynamic_array_complex64_test_common()
+  implicit none (type, external)
+    type(dynamic_array_complex64) :: array
+
+    complex(dp) :: res(100)
+    complex(dp), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_complex64_constructor()
+
+    call assertEqual(0, array%get_size())
+
+    call array%add_last((1d0, 0d0)) ! 1
+    call assertEqual(1, array%get_size())
+
+    call array%add_last((1d0, 0d0)) ! 1 1
+    call assertEqual((1d0, 0d0), array%get_value(1))
+
+    call array%add_last((1d0, 0d0)) ! 1 1 1
+    call array%add_last((3d0, 0d0)) ! 1 1 1 3
+    call array%set_value(1, (10d0, 1d0)) ! 10+i 1 1 3
+    call array%add_last((0d0 ,- 10d0)) ! 10+i 1 1 3 0-10i
+    call array%set_value(2, (- 1d0, 0d0)) ! 10+i -1 1 3 0-10i
+    call array%add_last((5d0, - 2d0)) ! 10+i -1 1 3 0-10i 5-2i
+    call array%delete_last() ! 10+i -1 1 3 0-10i
+
+    res(1:5) = [(10d0, 1d0), (- 1d0, 0d0), (1d0, 0d0), (3d0, 0d0), (0d0, - 10d0)]
+    call assertEqual(5, array%get_size())
+    do i = 1, 5
+      call assertEqual(res(i), array%get_value(i))
+    end do
+
+    call array%reserve(1)
+    call array%reserve(10)
+
+    raw_array = array%get_raw_array()
+
+    call assertEqual(5, size(raw_array))
+    do i = 1, 5
+      call assertEqual(res(i), raw_array(i))
+    end do
+  end subroutine dynamic_array_complex64_test_common
+
+  @test
+  subroutine dynamic_array_complex64_test_reserve_and_size()
+  implicit none (type, external)
+    type(dynamic_array_complex64) :: array
+
+    complex(dp), allocatable :: raw_array(:)
+
+    integer(i4) :: i
+
+    array = dynamic_array_complex64_constructor(reserve = 10)
+
+    do i = 1, 10000
+      call array%add_last((1d0, 0d0))
+    end do
+    raw_array = array%get_raw_array()
+
+    call assertEqual(10000, size(raw_array))
+
+    call array%reserve(100000)
+
+    call array%add_last((2d0, 0d0))
+
+    raw_array = array%get_raw_array()
+    call assertEqual(10001, size(raw_array))
+
+    call array%delete_last()
+    call array%delete_last()
+    raw_array = array%get_raw_array()
+    call assertEqual(9999, size(raw_array))
+  end subroutine dynamic_array_complex64_test_reserve_and_size
+
+
+
+
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "srart tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "end tests"
+  end subroutine AfterAll
+end module dynamic_array_test

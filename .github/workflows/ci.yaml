@@ -1,0 +1,230 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - development
+  pull_request:
+    branches:
+      - master
+      - development
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Setup GNU Fortran
+        run: |
+          sudo apt update
+          sudo apt install -y gcc
+          gfortran --version
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          # version: '4.2.2'
+          version: '3.24'
+
+      - name: Install openmp (required for fpunit)
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libopenmpi-dev \
+            openmpi-bin
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Install Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      #install external dependencies
+      - name: external dependencies
+        run: |
+          # cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=OFF
+          # cmake --build build --target all_external_dependencies_install
+          for f in ./cmake/add_dependencies_scripts/*.sh; do bash "$f"; done
+
+      # Build and test project
+      - name: Build and Test
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+          cmake --build build --target all lint test_extended
+
+
+
+
+
+
+
+
+
+# name: CI
+
+# on:
+#   push:
+#     branches:
+#       - master
+#       - development
+#   pull_request:
+#     branches:
+#       - master
+#       - development
+
+# jobs:
+#   build-and-test:
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         shell: bash
+
+#     steps:
+#       - name: Setup GNU Fortran
+#         run: |
+#           sudo apt update
+#           sudo apt install -y gcc
+#           gfortran --version
+
+#       - name: Setup CMake
+#         uses: jwlawson/actions-setup-cmake@v1
+#         with:
+#           version: '4.2.2'
+
+#       - name: Install openmp (required for fpunit)
+#         run: |
+#           sudo apt update
+#           sudo apt install -y \
+#             libopenmpi-dev \
+#             openmpi-bin
+
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+
+#       # Install Python
+#       - name: Setup Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: 3.11
+
+#       # Install Fortitude (lint)
+#       - name: Install Fortitude
+#         run: |
+#           mkdir -p external_dependencies/Fortitude
+#           python -m venv external_dependencies/Fortitude/Fortitude_environment
+#           source external_dependencies/Fortitude/Fortitude_environment/bin/activate
+#           pip install --upgrade pip
+#           pip install fortitude-lint
+#           deactivate
+
+#       # Install Fortran linter
+#       - name: Install Fortran linter
+#         run: |
+#           mkdir -p external_dependencies
+#           cd external_dependencies
+#           git clone https://github.com/cphyc/fortran-syntax.git
+#           cd fortran-syntax
+#           python -m venv Fortran_linter_environment
+#           source Fortran_linter_environment/bin/activate
+#           pip install --upgrade pip
+#           pip install .
+#           cat > "check.py" << 'EOL'
+#           import os
+#           import subprocess
+#           import glob
+
+#           def delete_incorrect_warning(text: str) -> str:
+#             lines = text.splitlines()
+
+#             to_remove = []
+
+#             for i, line in enumerate(lines):
+#               if "Warning: Single space after 'print*,' at (1)." in line:
+#                 to_remove.append(i)
+#               if "Warning: Exactly one space after comment at (1)." in line:
+#                 to_remove.append(i)
+
+#             for index in reversed(to_remove):
+#               if index >= 4:
+#                 lines = lines[:index-4] + lines[index+1:]
+#               else:
+#                 lines = lines[index+1:]
+
+#             return '\n'.join(lines)
+
+
+
+#           files = glob.glob('src/**/*.f90', recursive=True)
+#           files += glob.glob('src/**/*.pf', recursive=True)
+
+#           if files:
+#             venv_dir = "./external_dependencies/fortran-syntax/Fortran_linter_environment"
+#             env = os.environ.copy()
+#             env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + env.get("PATH", "")
+#             result = subprocess.run(['fortran-linter', '--syntax-only'] + files,
+#               stdout=subprocess.PIPE,
+#               stderr=subprocess.PIPE,
+#               env=env
+#               )
+#             res = result.stdout.decode('utf-8')
+#             res += result.stderr.decode('utf-8')
+#             # res = res.replace("Warning: Single space after 'print*,' at (1).", "Info: Single space after 'print*,' at (1).")
+#             # print(res)
+#             res = delete_incorrect_warning(res)
+
+#             print(res)
+
+#             if "Warning" in res:
+#               raise RuntimeError("Warning Fortran linter: found")
+#             else:
+#               print("lint has finished")
+#           else:
+#             raise FileNotFoundError("error Fortran linter: no files have found")
+
+#           EOL
+#           deactivate
+#           cd ../..
+
+#       # Install pFUnit
+#       - name: Install pFUnit
+#         run: |
+#           mkdir -p external_dependencies
+#           cd external_dependencies
+#           git clone --recursive https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git
+#           cd pFUnit
+#           mkdir build
+#           cd build
+#           cmake ..
+#           # make tests
+#           sudo make install
+#           cd ../../..
+
+#       # Build and test project
+#       - name: Build and Test
+#         run: |
+#           cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+#           # Run Fortitude lint
+#           source ./external_dependencies/Fortitude/Fortitude_environment/bin/activate
+#           cmake --build build --target Fortitude_linter_f90
+#           cmake --build build --target Fortitude_linter_pf
+#           deactivate
+
+#           # Run Fortran linter
+#           source ./external_dependencies/fortran-syntax/Fortran_linter_environment/bin/activate
+#           cmake --build build --target lint_Fortran_linter
+#           deactivate
+
+#           # Build all targets
+#           cmake --build build --target all
+
+#           # Run tests
+#           cmake --build build --target test

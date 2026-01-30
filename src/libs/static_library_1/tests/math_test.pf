@@ -1,0 +1,68 @@
+@test
+module math_test
+use static_library_1___math, only: max_new, min_new
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine max_new_test_common()
+  implicit none (type, external)
+    real(dp) :: a, b
+
+    a = 1d0
+    b = - 3d0
+
+    call assertEqual(1d0, max_new(a, b))
+  end subroutine max_new_test_common
+
+  @test
+  subroutine min_new_test_common()
+  implicit none (type, external)
+    real(dp) :: a, b
+
+    a = 1d0
+    b = - 3d0
+
+    call assertEqual(- 3d0, min_new(a, b))
+  end subroutine min_new_test_common
+
+
+
+
+
+  ! @setup
+  ! subroutine BeforeEach()
+  ! implicit none (type, external)
+  ! print *, "Before each test"
+  ! end subroutine BeforeEach
+
+  ! @teardown
+  ! subroutine AfterEach()
+  ! implicit none (type, external)
+  ! print *, "After each test"
+  ! end subroutine AfterEach
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module math_test
