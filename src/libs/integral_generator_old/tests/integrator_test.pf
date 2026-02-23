@@ -1,0 +1,483 @@
+@test
+module integrator_test
+use integral_generator_old___integrator, only: &
+  integrator_obj, integrator_builder_obj, &
+  integrator_builder_constructor, &
+
+  PATH_PART_TYPE_PARALLEL_X, &
+  PATH_PART_TYPE_PARALLEL_Y, &
+
+  INTEGRATION_TYPE_GAUSS3_WITH_AUTO_RECALCULATION, &
+  INTEGRATION_TYPE_GAUSS4_WITH_AUTO_RECALCULATION, &
+  INTEGRATION_TYPE_GAUSS5_WITH_AUTO_RECALCULATION, &
+  INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION, &
+  INTEGRATION_TYPE_GAUSS7_WITH_AUTO_RECALCULATION, &
+  INTEGRATION_TYPE_GAUSS8_WITH_AUTO_RECALCULATION
+use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
+  ieee_is_nan
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine integrator_test_create_simple_single_part()
+  implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+      call builder%start_point((0d0, 0d0))
+      call builder%end_point((3.14159265358979d0, 0d0))
+      call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      call builder%set_accuration(1d-3)
+      integrator = builder%build()
+    end block
+
+    call assertEqual(&
+      expected = (2d0, 0d0), &
+      actual = integrator%integrate(func), &
+      tolerance = 1d-3, &
+      message = "incorrect result" &
+    )
+  contains
+    complex(dp) function func(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x)
+    end function func
+  end subroutine integrator_test_create_simple_single_part
+
+  @test
+  subroutine integrator_test_create_simple_single_part_accuration_element()
+  implicit none (type, external)
+    type(integrator_obj) :: integrator
+    type(integrator_builder_obj) :: builder
+
+    integer(i4) :: i, j, element
+
+    integer(i4), parameter :: func_size = 4, eps_size = 9
+    complex(dp), parameter :: &
+      a(func_size) = [0d0, - 40d0, 0d0, &
+        - 1.5d0 * 3.14159265358979d0], &
+      b(func_size) = [3.14159265358979d0, 40d0, 2d0, &
+        4d0 * 3.14159265358979d0], &
+      res(func_size) = [(2d0, 0d0), (2d0, 0d0), (2d0, 0d0), &
+        (- 1d0, 0d0)]
+    real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
+    integer(i4) :: func_index
+
+    do element = 3, 8
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+      select case (element)
+      case (3)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS3_WITH_AUTO_RECALCULATION)
+      case (4)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS4_WITH_AUTO_RECALCULATION)
+      case (5)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS5_WITH_AUTO_RECALCULATION)
+      case (6)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      case (7)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS7_WITH_AUTO_RECALCULATION)
+      case (8)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS8_WITH_AUTO_RECALCULATION)
+      case default
+        error stop "unkown element"
+      end select
+
+      do i = 1, func_size
+        func_index = i
+        call builder%start_point(a(i))
+        call builder%end_point(b(i))
+
+        do j = 1, eps_size
+          call builder%set_accuration(eps(j))
+          integrator = builder%build()
+
+          call assertEqual(&
+            expected = res(i), &
+            actual = integrator%integrate(func), &
+            tolerance = eps(j), &
+            message = "incorrect result" &
+          )
+        end do
+      end do
+    end do
+  contains
+    complex(dp) function func(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      select case (func_index)
+      case (1)
+        res = func_sin(x)
+      case (2)
+        res = func_exp(x)
+      case (3)
+        res = func_pol(x)
+      case (4)
+        res = func_sin(x)
+      case default
+        res = ieee_value(0d0, ieee_signaling_nan)
+      end select
+    end function func
+
+    complex(dp) function func_sin(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x)
+    end function func_sin
+    complex(dp) function func_exp(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = exp(- abs(x))
+    end function func_exp
+    complex(dp) function func_pol(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = x ** 7 / 16d0
+    end function func_pol
+  end subroutine integrator_test_create_simple_single_part_accuration_element
+
+  @test
+  subroutine integrator_test_create_complex_single_part_accuration_element()
+  implicit none (type, external)
+    type(integrator_obj) :: integrator
+    type(integrator_builder_obj) :: builder
+
+    integer(i4) :: i, j, element
+
+    integer(i4), parameter :: func_size = 6, eps_size = 9
+    complex(dp), parameter :: &
+      a(func_size) = [ &
+        (- 1d0, 0d0), (0d0, 1d0), &
+        (- 1d0, 0d0), (0d0, 1d0), &
+        (- 1d0, 0d0), (0d0, 1d0) &
+      ], &
+      b(func_size) = [ &
+        (- 1d0, - 3d0), (0d0, 2d0), &
+        (- 1d0, - 3d0), (0d0, 2d0), &
+        (- 1d0, - 3d0), (0d0, 2d0) &
+      ], &
+      res(func_size) = [ &
+        (0d0, 0d0), (0d0, 0d0), &
+        (0d0, - 9d0), (0d0, 3d0), &
+        (6d0, - 3d0), (- 2d0, 1d0) &
+      ]
+    real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
+    integer(i4) :: func_index
+
+    do element = 3, 8
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
+      select case (element)
+      case (3)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS3_WITH_AUTO_RECALCULATION)
+      case (4)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS4_WITH_AUTO_RECALCULATION)
+      case (5)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS5_WITH_AUTO_RECALCULATION)
+      case (6)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      case (7)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS7_WITH_AUTO_RECALCULATION)
+      case (8)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS8_WITH_AUTO_RECALCULATION)
+      case default
+        error stop "unkown element"
+      end select
+
+      do i = 1, func_size
+        func_index = i
+        call builder%start_point(a(i))
+        call builder%end_point(b(i))
+
+        do j = 1, eps_size
+          call builder%set_accuration(eps(j))
+          integrator = builder%build()
+
+          call assertEqual(&
+            expected = res(i), &
+            actual = integrator%integrate(func), &
+            tolerance = eps(j), &
+            message = "incorrect result" &
+          )
+        end do
+      end do
+    end do
+  contains
+    complex(dp) function func(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      select case (func_index)
+      case (1)
+        res = func_0(x)
+      case (2)
+        res = func_0(x)
+      case (3)
+        res = func_3(x)
+      case (4)
+        res = func_3(x)
+      case (5)
+        res = func_1_2i(x)
+      case (6)
+        res = func_1_2i(x)
+      case default
+        res = ieee_value(0d0, ieee_signaling_nan)
+      end select
+    end function func
+
+    complex(dp) function func_0(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = 0d0
+    end function func_0
+    complex(dp) function func_3(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = 3d0
+    end function func_3
+    complex(dp) function func_1_2i(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = (1d0, 2d0)
+    end function func_1_2i
+  end subroutine integrator_test_create_complex_single_part_accuration_element
+
+  @test
+  subroutine integrator_test_circle_paths()
+    implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    real(dp), parameter :: eps = 1d-6
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+      call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      call builder%set_accuration(eps)
+
+      call builder%start_point((- 1d0, - 1d0))
+      call builder%end_point((1d0, - 1d0))
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
+      call builder%end_point((1d0, 1d0))
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+      call builder%end_point((- 1d0, 1d0))
+      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
+      call builder%end_point((- 1d0, - 1d0))
+
+      integrator = builder%build()
+    end block
+
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_sin), &
+      tolerance = eps, &
+      message = "incorrect result func_sin" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_exp), &
+      tolerance = eps, &
+      message = "incorrect result func_exp" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_exp_sin), &
+      tolerance = eps, &
+      message = "incorrect result func_exp_sin" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_1), &
+      tolerance = eps, &
+      message = "incorrect result func_1" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_0), &
+      tolerance = eps, &
+      message = "incorrect result func_0" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func_i), &
+      tolerance = eps, &
+      message = "incorrect result func_i" &
+    )
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = integrator%integrate(func__1_2i), &
+      tolerance = eps, &
+      message = "incorrect result func__1_2i" &
+    )
+  contains
+    complex(dp) function func_sin(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x)
+    end function func_sin
+    complex(dp) function func_exp(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = exp(x)
+    end function func_exp
+    complex(dp) function func_exp_sin(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = exp(- x + sin(x)) + sin(x)
+    end function func_exp_sin
+    complex(dp) function func_1(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = 1d0
+    end function func_1
+    complex(dp) function func_0(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = 0d0
+    end function func_0
+    complex(dp) function func_i(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = (0d0, 1d0)
+    end function func_i
+    complex(dp) function func__1_2i(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = (- 1d0, 2d0)
+    end function func__1_2i
+  end subroutine integrator_test_circle_paths
+
+    @test
+  subroutine integrator_test_circle_paths_with_poles()
+    implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    real(dp), parameter :: eps = 1d-6
+
+    complex(dp), parameter :: res(3) = 2d0 * 3.14159265358979d0 * (0d0, 1d0) * &
+      [(0d0, 0d0), (1d0, 0d0), ((0.1d0, 1.1d0) ** 3)]
+
+    integer(i4) :: i
+    real(dp), parameter :: radius(10) = [(0.1d0 + 0.1d0 * real(i, dp), i = 1, 10)]
+
+    do i = 1, 10
+      block
+        type(integrator_builder_obj) :: builder
+        builder = integrator_builder_constructor()
+        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+        call builder%set_accuration(eps)
+
+        call builder%start_point((- 1d0, - 1d0) * radius(i))
+        call builder%end_point((1d0, - 1d0) * radius(i))
+        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
+        call builder%end_point((1d0, 1d0) * radius(i))
+        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
+        call builder%end_point((- 1d0, 1d0) * radius(i))
+        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
+        call builder%end_point((- 1d0, - 1d0) * radius(i))
+
+        integrator = builder%build()
+      end block
+
+      call assertEqual(&
+        expected = res(1), &
+        actual = integrator%integrate(func_1), &
+        tolerance = eps, &
+        message = "incorrect result func_1" &
+      )
+      call assertEqual(&
+        expected = res(2), &
+        actual = integrator%integrate(func_2), &
+        tolerance = eps, &
+        message = "incorrect result func_2" &
+      )
+      call assertEqual(&
+        expected = res(3), &
+        actual = integrator%integrate(func_3), &
+        tolerance = eps, &
+        message = "incorrect result func_3" &
+      )
+      call assertEqual(&
+        expected = sum(res), &
+        actual = integrator%integrate(func_123), &
+        tolerance = eps, &
+        message = "incorrect result func_123" &
+      )
+    end do
+  contains
+    complex(dp) function func_1(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) / x
+    end function func_1
+    complex(dp) function func_2(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) / x / x
+    end function func_2
+    complex(dp) function func_3(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = (x + (0d0, 1d0)) ** 3 / (x - (0.1d0, 0.1d0))
+    end function func_3
+
+    complex(dp) function func_123(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = func_1(x) + func_2(x) + func_3(x)
+    end function func_123
+  end subroutine integrator_test_circle_paths_with_poles
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module integrator_test

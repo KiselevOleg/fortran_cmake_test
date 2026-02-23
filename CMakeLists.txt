@@ -67,5 +67,6 @@ include(cmake/tests.cmake)
 
 add_subdirectory(src/libs/system)
 add_subdirectory(src/libs/integral_generator)
+add_subdirectory(src/libs/integral_generator_old)
 add_subdirectory(src/libs/static_library_1)
 add_subdirectory(src/app)
