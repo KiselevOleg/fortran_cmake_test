@@ -11,6 +11,7 @@ set_target_properties(main PROPERTIES
 
 target_link_libraries(main PRIVATE static_library_1)
 target_link_libraries(main PRIVATE integral_generator)
+target_link_libraries(main PRIVATE integral_generator_old)
 target_link_libraries(main
   PUBLIC
     flags_features
