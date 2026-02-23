@@ -1,0 +1,57 @@
+submodule(integration_path_part_parallel_Im) integration_path_part_parallel_Im_impl
+use system___assert, only: error_assert, error_not_assert, &
+  warning_assert, warning_not_assert, &
+  equals
+implicit none (type, external)
+
+  contains
+
+  module procedure integration_path_part_parallel_Im_constructor
+    call error_assert(location = module_name // &
+      ".constructor", &
+      message = "abs(delta_Im) > 0", &
+      condition = abs(delta_Im) > 0d0 &
+    )
+
+    call this%set_boundary_points(start, start + delta_Im * (0d0, 1d0))
+  end procedure integration_path_part_parallel_Im_constructor
+
+  complex(dp) module function projection_function_obj(this, func, x) result(res)
+  implicit none (type, external)
+    class(integration_path_part_parallel_Im_obj), intent(in) :: this
+    procedure(integrated_function_type) :: func
+    real(dp), intent(in) :: x
+  !module procedure projection_function_obj
+    complex(dp) :: v
+
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      v = x * (0d0, 1d0) + real(a)
+
+      res = func(v)
+    end associate
+  !end procedure projection_function_obj
+  end function projection_function_obj
+  module procedure normilized_delta_obj
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = (0d0, 1d0)
+      if (aimag(a) > aimag(b)) res = - res
+    end associate
+  end procedure normilized_delta_obj
+  module procedure start_projection_point
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = min(aimag(a), aimag(b))
+    end associate
+  end procedure start_projection_point
+  module procedure end_projection_point
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = max(aimag(a), aimag(b))
+    end associate
+  end procedure end_projection_point
+
+  module procedure set_boundary_points_preparate
+    call error_assert(location = module_name // ".set_boundary_points", &
+      message = "|Re(start - end)| < 1d-12", &
+      condition = equals(real(start - end), 0d0, 1d-12) &
+    )
+  end procedure set_boundary_points_preparate
+end submodule integration_path_part_parallel_Im_impl

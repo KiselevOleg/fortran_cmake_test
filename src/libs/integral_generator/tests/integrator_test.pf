@@ -1,18 +1,20 @@
 @test
 module integrator_test
-use integral_generator___integrator, only: &
-  integrator_obj, integrator_builder_obj, &
-  integrator_builder_constructor, &
+use integral_generator___integration, only: &
+  integrator_obj, integrator_builder_obj, integrator_builder_constructor, &
 
-  PATH_PART_TYPE_PARALLEL_X, &
-  PATH_PART_TYPE_PARALLEL_Y, &
+  template_recalculation => integration_template_recalculation_constructor, &
 
-  INTEGRATION_TYPE_GAUSS3_WITH_AUTO_RECALCULATION, &
-  INTEGRATION_TYPE_GAUSS4_WITH_AUTO_RECALCULATION, &
-  INTEGRATION_TYPE_GAUSS5_WITH_AUTO_RECALCULATION, &
-  INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION, &
-  INTEGRATION_TYPE_GAUSS7_WITH_AUTO_RECALCULATION, &
-  INTEGRATION_TYPE_GAUSS8_WITH_AUTO_RECALCULATION
+  integrated_function_type, &
+  path_part_parallel_Im => integration_path_part_parallel_Im_constructor, &
+  path_part_parallel_Re => integration_path_part_parallel_Re_constructor, &
+
+  element_gauss3 => integration_element_gauss3_constructor, &
+  element_gauss4 => integration_element_gauss4_constructor, &
+  element_gauss5 => integration_element_gauss5_constructor, &
+  element_gauss6 => integration_element_gauss6_constructor, &
+  element_gauss7 => integration_element_gauss7_constructor, &
+  element_gauss8 => integration_element_gauss8_constructor
 use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
   ieee_is_nan
 use PFUnit, only: &
@@ -38,10 +40,13 @@ contains
     block
       type(integrator_builder_obj) :: builder
       builder = integrator_builder_constructor()
-      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-      call builder%start_point((0d0, 0d0))
-      call builder%end_point((3.14159265358979d0, 0d0))
-      call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_start((0d0, 0d0)), 3.14159265358979d0) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss6() &
+      )
       call builder%set_accuration(1d-3)
       integrator = builder%build()
     end block
@@ -62,12 +67,12 @@ contains
   end subroutine integrator_test_create_simple_single_part
 
   @test
-  subroutine integrator_test_create_simple_single_part_accuration()
+  subroutine integrator_test_create_simple_single_part_accuration_element()
   implicit none (type, external)
     type(integrator_obj) :: integrator
     type(integrator_builder_obj) :: builder
 
-    integer(i4) :: i, j
+    integer(i4) :: i, j, element
 
     integer(i4), parameter :: func_size = 4, eps_size = 9
     complex(dp), parameter :: &
@@ -80,25 +85,59 @@ contains
     real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
     integer(i4) :: func_index
 
-    builder = integrator_builder_constructor()
-    call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-    call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
-
-    do i = 1, func_size
-      func_index = i
-      call builder%start_point(a(i))
-      call builder%end_point(b(i))
-
-      do j = 1, eps_size
-        call builder%set_accuration(eps(j))
-        integrator = builder%build()
-
-        call assertEqual(&
-          expected = res(i), &
-          actual = integrator%integrate(func), &
-          tolerance = eps(j), &
-          message = "incorrect result" &
+    do element = 3, 8
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0))
+      select case (element)
+      case (3)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss3() &
         )
+      case (4)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss4() &
+        )
+      case (5)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss5() &
+        )
+      case (6)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss6() &
+        )
+      case (7)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss7() &
+        )
+      case (8)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss8() &
+        )
+      case default
+        error stop "unknown element"
+      end select
+
+      do i = 1, func_size
+        func_index = i
+        call builder%set_boundary_points(a(i), b(i))
+
+        do j = 1, eps_size
+          call builder%set_accuration(eps(j))
+          integrator = builder%build()
+
+          call assertEqual(&
+            expected = res(i), &
+            actual = integrator%integrate(func), &
+            tolerance = eps(j), &
+            message = "incorrect result" &
+          )
+        end do
       end do
     end do
   contains
@@ -138,19 +177,20 @@ contains
 
       res = x ** 7 / 16d0
     end function func_pol
-  end subroutine integrator_test_create_simple_single_part_accuration
+  end subroutine integrator_test_create_simple_single_part_accuration_element
 
   @test
-  subroutine integrator_test_create_complex_single_part_accuration()
+  subroutine integrator_test_create_complex_single_part_accuration_element()
   implicit none (type, external)
     type(integrator_obj) :: integrator
     type(integrator_builder_obj) :: builder
 
-    integer(i4) :: i, j
+    integer(i4) :: i, j, element
 
-    integer(i4), parameter :: func_size = 6, eps_size = 9
+    integer(i4), parameter :: func_size = 8, eps_size = 9
     complex(dp), parameter :: &
       a(func_size) = [ &
+        (- 1d0, 0d0), (0d0, 1d0), &
         (- 1d0, 0d0), (0d0, 1d0), &
         (- 1d0, 0d0), (0d0, 1d0), &
         (- 1d0, 0d0), (0d0, 1d0) &
@@ -158,35 +198,71 @@ contains
       b(func_size) = [ &
         (- 1d0, - 3d0), (0d0, 2d0), &
         (- 1d0, - 3d0), (0d0, 2d0), &
+        (- 1d0, - 3d0), (0d0, 2d0), &
         (- 1d0, - 3d0), (0d0, 2d0) &
       ], &
       res(func_size) = [ &
         (0d0, 0d0), (0d0, 0d0), &
         (0d0, - 9d0), (0d0, 3d0), &
-        (6d0, - 3d0), (- 2d0, 1d0) &
+        (6d0, - 3d0), (- 2d0, 1d0), &
+        sin(b(7)) - sin(a(7)), sin(b(8)) - sin(a(8)) &
       ]
     real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
     integer(i4) :: func_index
 
-    builder = integrator_builder_constructor()
-    call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
-    call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
-
-    do i = 1, func_size
-      func_index = i
-      call builder%start_point(a(i))
-      call builder%end_point(b(i))
-
-      do j = 1, eps_size
-        call builder%set_accuration(eps(j))
-        integrator = builder%build()
-
-        call assertEqual(&
-          expected = res(i), &
-          actual = integrator%integrate(func), &
-          tolerance = eps(j), &
-          message = "incorrect result" &
+    do element = 3, 8
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part(path_part_parallel_Im(builder%last_start((0d0, 0d0)), 1d0))
+      select case (element)
+      case (3)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss3() &
         )
+      case (4)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss4() &
+        )
+      case (5)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss5() &
+        )
+      case (6)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss6() &
+        )
+      case (7)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss7() &
+        )
+      case (8)
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss8() &
+        )
+      case default
+        error stop "unknown element"
+      end select
+
+      do i = 1, func_size
+        func_index = i
+        call builder%set_boundary_points(a(i), b(i))
+
+        do j = 1, eps_size
+          call builder%set_accuration(eps(j))
+          integrator = builder%build()
+
+          call assertEqual(&
+            expected = res(i), &
+            actual = integrator%integrate(func), &
+            tolerance = eps(j), &
+            message = "incorrect result" &
+          )
+        end do
       end do
     end do
   contains
@@ -207,6 +283,10 @@ contains
         res = func_1_2i(x)
       case (6)
         res = func_1_2i(x)
+      case (7)
+        res = func_cos(x)
+      case (8)
+        res = func_cos(x)
       case default
         res = ieee_value(0d0, ieee_signaling_nan)
       end select
@@ -230,7 +310,13 @@ contains
 
       res = (1d0, 2d0)
     end function func_1_2i
-  end subroutine integrator_test_create_complex_single_part_accuration
+    complex(dp) function func_cos(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = cos(x)
+    end function func_cos
+  end subroutine integrator_test_create_complex_single_part_accuration_element
 
   @test
   subroutine integrator_test_circle_paths()
@@ -242,18 +328,27 @@ contains
     block
       type(integrator_builder_obj) :: builder
       builder = integrator_builder_constructor()
-      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-      call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss6() &
+      )
       call builder%set_accuration(eps)
 
-      call builder%start_point((- 1d0, - 1d0))
-      call builder%end_point((1d0, - 1d0))
-      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
-      call builder%end_point((1d0, 1d0))
-      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-      call builder%end_point((- 1d0, 1d0))
-      call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
-      call builder%end_point((- 1d0, - 1d0))
+      call builder%set_boundary_points( &
+        builder%last_start((- 1d0, - 1d0)), builder%last_end((1d0, - 1d0)) &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Im(builder%last_end(), 2d0) &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_end(), - 2d0) &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Im(builder%last_end(), - 2d0) &
+      )
 
       integrator = builder%build()
     end block
@@ -345,7 +440,7 @@ contains
     end function func__1_2i
   end subroutine integrator_test_circle_paths
 
-    @test
+  @test
   subroutine integrator_test_circle_paths_with_poles()
     implicit none (type, external)
     type(integrator_obj) :: integrator
@@ -362,18 +457,28 @@ contains
       block
         type(integrator_builder_obj) :: builder
         builder = integrator_builder_constructor()
-        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-        call builder%part_integration_strategy(INTEGRATION_TYPE_GAUSS6_WITH_AUTO_RECALCULATION)
+        call builder%add_new_path_part( &
+          path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0) &
+        )
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss6() &
+        )
         call builder%set_accuration(eps)
 
-        call builder%start_point((- 1d0, - 1d0) * radius(i))
-        call builder%end_point((1d0, - 1d0) * radius(i))
-        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
-        call builder%end_point((1d0, 1d0) * radius(i))
-        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_X)
-        call builder%end_point((- 1d0, 1d0) * radius(i))
-        call builder%add_new_path_part(PATH_PART_TYPE_PARALLEL_Y)
-        call builder%end_point((- 1d0, - 1d0) * radius(i))
+        call builder%set_boundary_points( &
+          builder%last_start((- 1d0, - 1d0) * radius(i)), &
+          builder%last_end((1d0, - 1d0) * radius(i)) &
+        )
+        call builder%add_new_path_part( &
+          path_part_parallel_Im(builder%last_end(), 2d0 * radius(i)) &
+        )
+        call builder%add_new_path_part( &
+          path_part_parallel_Re(builder%last_end(), - 2d0 * radius(i)) &
+        )
+        call builder%add_new_path_part( &
+          path_part_parallel_Im(builder%last_end(), - 2d0 * radius(i)) &
+        )
 
         integrator = builder%build()
       end block

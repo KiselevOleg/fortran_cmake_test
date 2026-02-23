@@ -1,5 +1,7 @@
 {
   "fortran.linter.includePaths": [
     "${workspaceFolder}/build/mod_list_all"
-  ]
+  ],
+  // "editor.rulers": [80, 120]
+  "editor.rulers": [100]
 }
