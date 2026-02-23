@@ -62,6 +62,9 @@ contains
     implicit none (type, external)
       complex(dp), intent(in) :: x
 
+      if (.not. (0d0 <= real(x) .and. real(x) <= 3.14159265358979d0)) error stop "incorrect x"
+      if (abs(aimag(x)) > 1d-100) error stop "incorrect x"
+
       res = sin(x)
     end function func
   end subroutine integrator_test_create_simple_single_part

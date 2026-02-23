@@ -75,27 +75,29 @@ implicit none (type, external)
         x = a
         h = init_step
         do while (x < b)
-          int_elem_1 = integration_element%run(func, x, x + h + h)
-          int_elem_2 = integration_element%run(func, x, x + h)
-          int_elem_2 = int_elem_2 + integration_element%run(func, x + h, x + h + h)
+          int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
+          int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
+          int_elem_2 = int_elem_2 + &
+            integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
           current_eps = abs(int_elem_2 - int_elem_1) * 1.5d0
 
           do while (h >= min_step .and. current_eps > eps)
             h = h * 0.5d0
 
-            int_elem_1 = integration_element%run(func, x, x + h + h)
-            int_elem_2 = integration_element%run(func, x, x + h)
-            int_elem_2 = int_elem_2 + integration_element%run(func, x + h, x + h + h)
+            int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
+            int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
+            int_elem_2 = int_elem_2 + &
+              integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
             current_eps = abs(int_elem_2 - int_elem_1) * 1.5d0
           end do
 
-          if (x + h + h > b) int_elem_2 = integration_element%run(func, x, b)
+          ! if (x + h + h > b) int_elem_2 = integration_element%run(func, x, b)
           if (present(normilized_delta)) then
-            res = res + int_elem_2 * normilized_delta(x = x, dx = h + h)
+            res = res + int_elem_2 * normilized_delta(x = x, dx = min(h + h, b - x))
           else
             res = res + int_elem_2
           end if
-          x = x + h + h
+          x = x + min(h + h, b - x)
 
           if (current_eps < eps + eps + eps) h = min(max_step_half, h + h)
           if (abs(x - b) <= 1d-7) exit
