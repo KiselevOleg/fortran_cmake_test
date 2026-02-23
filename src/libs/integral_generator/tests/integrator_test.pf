@@ -536,6 +536,306 @@ contains
     end function func_123
   end subroutine integrator_test_circle_paths_with_poles
 
+  @test
+  subroutine integrator_test_regilar_surf()
+    implicit none (type, external)
+    type(integrator_obj) :: integrator_inner, integrator_outer
+
+    real(dp), parameter :: eps = 1d-6
+
+    complex(dp), parameter :: res(5) = &
+      [(3.14159265358979d0, 0d0), (0d0, 0d0), (0d0, 0d0), (1d4, 0d0), (0d0, 1d4)]
+
+    complex(dp) :: y
+
+    integer(i4) :: surf_number
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_start((- 50d0, 0d0)), 100d0) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss3() &
+      )
+      call builder%set_accuration(eps)
+      integrator_inner = builder%build()
+      integrator_outer = builder%build()
+    end block
+
+    surf_number = 1
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_1" &
+    )
+    surf_number = 2
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_2" &
+    )
+    surf_number = 3
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_3" &
+    )
+    surf_number = 4
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_4" &
+    )
+    surf_number = 5
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_5" &
+    )
+  contains
+
+    complex(dp) function inner_int1(y_) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: y_
+
+      y = y_
+
+      res = integrator_inner%integrate(inner_int2)
+    end function inner_int1
+    complex(dp) function inner_int2(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = surf(x, y)
+    end function inner_int2
+
+    complex(dp) function surf(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      select case (surf_number)
+      case (1)
+        res = surf_1(x, y)
+      case (2)
+        res = surf_2(x, y)
+      case (3)
+        res = surf_3(x, y)
+      case (4)
+        res = surf_4(x, y)
+      case (5)
+        res = surf_5(x, y)
+      case default
+        error stop "unknown surf_number"
+      end select
+    end function surf
+
+    complex(dp) function surf_1(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = exp(- x ** 2 - y ** 2)
+    end function surf_1
+    complex(dp) function surf_2(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = exp(- x ** 2 - y ** 2) * sin(x * y)
+    end function surf_2
+    complex(dp) function surf_3(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (0d0, 0d0)
+    end function surf_3
+    complex(dp) function surf_4(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (1d0, 0d0)
+    end function surf_4
+    complex(dp) function surf_5(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (0d0, 1d0)
+    end function surf_5
+  end subroutine integrator_test_regilar_surf
+
+  @test
+  subroutine integrator_test_surf_polar_system_Im_under_near_r_1()
+    implicit none (type, external)
+    type(integrator_obj) :: integrator_inner, integrator_outer
+
+    real(dp), parameter :: eps = 1d-6
+
+    complex(dp), parameter :: res(5) = &
+      [(3.14159265358979d0, 0d0), (0d0, 0d0), (0d0, 0d0), &
+      3.14159265358979d0 * 50d0 ** 2 * (1d0, 0d0), 3.14159265358979d0 * 50d0 ** 2 * (0d0, 1d0)]
+
+    complex(dp) :: r
+
+    integer(i4) :: surf_number
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part( &
+        path_part_parallel_Im(builder%last_start((1d-9, 0d0)), - 0.01d0) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss3() &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_end(), 5d0) &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Im(builder%last_end(), 0.01d0) &
+      )
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_end(), 45d0) &
+      )
+      call builder%set_accuration(eps)
+      integrator_outer = builder%build()
+    end block
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part( &
+        path_part_parallel_Re(builder%last_start((0d0, 0d0)), 2d0 * 3.14159265358979d0) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss3() &
+      )
+      call builder%set_accuration(eps)
+      integrator_inner = builder%build()
+    end block
+
+    surf_number = 1
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_1" &
+    )
+    surf_number = 2
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_2" &
+    )
+    surf_number = 3
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_3" &
+    )
+    surf_number = 4
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_4" &
+    )
+    surf_number = 5
+    call assertEqual(&
+      expected = res(surf_number), &
+      actual = integrator_outer%integrate(inner_int1), &
+      tolerance = eps, &
+      message = "incorrect result surf_5" &
+    )
+  contains
+
+    complex(dp) function inner_int1(r_) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: r_
+
+      r = r_
+
+      res = integrator_inner%integrate(inner_int2)
+    end function inner_int1
+    complex(dp) function inner_int2(phi) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: phi
+
+      res = surf(x = r * cos(phi), y = r * sin(phi)) * r
+    end function inner_int2
+
+    complex(dp) function surf(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      select case (surf_number)
+      case (1)
+        res = surf_1(x, y)
+      case (2)
+        res = surf_2(x, y)
+      case (3)
+        res = surf_3(x, y)
+      case (4)
+        res = surf_4(x, y)
+      case (5)
+        res = surf_5(x, y)
+      case default
+        error stop "unknown surf_number"
+      end select
+    end function surf
+
+    complex(dp) function surf_1(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = exp(- x ** 2 - y ** 2)
+    end function surf_1
+    complex(dp) function surf_2(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = exp(- x ** 2 - y ** 2) * sin(x * y)
+    end function surf_2
+    complex(dp) function surf_3(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (0d0, 0d0)
+    end function surf_3
+    complex(dp) function surf_4(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (1d0, 0d0)
+    end function surf_4
+    complex(dp) function surf_5(x, y) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+      complex(dp), intent(in) :: y
+
+      res = (0d0, 1d0)
+    end function surf_5
+  end subroutine integrator_test_surf_polar_system_Im_under_near_r_1
+
 
 
 

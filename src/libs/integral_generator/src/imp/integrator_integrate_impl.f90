@@ -31,7 +31,7 @@ implicit none (type, external)
 
       res = this%part(i)%path_part%normilized_delta(x = x, dx = dx)
     end function normilized_delta_func
-    complex(dp) function projection_func(x) result(res)
+    recursive complex(dp) function projection_func(x) result(res)
     implicit none (type, external)
       real(dp), intent(in) :: x
 

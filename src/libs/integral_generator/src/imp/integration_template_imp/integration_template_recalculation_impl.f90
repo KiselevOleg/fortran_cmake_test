@@ -7,7 +7,7 @@ implicit none (type, external)
   real(dp), parameter :: &
     MIN_STEP_DEFAULT = 1d-5, &
     MAX_STEP_DEFAULT = 0.4d0, &
-    INIT_STEP_DEFAULT = 1d-5
+    INIT_STEP_DEFAULT = 1d-2
 
   contains
 
@@ -37,7 +37,7 @@ implicit none (type, external)
     end associate
   end procedure integration_template_recalculation_constructor
 
-  complex(dp) module function run( &
+  recursive complex(dp) module function run( &
       this, &
       func, a, b, &
       integration_element, &
@@ -45,11 +45,11 @@ implicit none (type, external)
       normilized_delta &
     ) result(res)
   implicit none (type, external)
-    class(integration_template_recalculation_obj), intent(in) :: this
+    class(integration_template_recalculation_obj), intent(inout) :: this
     procedure(projection_function_type) :: func
     real(dp), intent(in) :: a
     real(dp), intent(in) :: b
-    class(integration_element_obj), intent(in) :: integration_element
+    class(integration_element_obj), intent(inout) :: integration_element
     !> required accuracy
     real(dp), intent(in) :: eps
     procedure(normilized_delta_type), optional :: normilized_delta
@@ -73,8 +73,7 @@ implicit none (type, external)
         complex(dp) :: int_elem_1, int_elem_2
 
         x = a
-        ! h = min(1d-3, eps)
-        h = min_step
+        h = init_step
         do while (x < b)
           int_elem_1 = integration_element%run(func, x, x + h + h)
           int_elem_2 = integration_element%run(func, x, x + h)

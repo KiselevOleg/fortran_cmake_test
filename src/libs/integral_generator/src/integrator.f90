@@ -160,9 +160,9 @@ private
   end interface
 
   interface
-    complex(dp) module function integrate(this, func) result(res)
+    recursive complex(dp) module function integrate(this, func) result(res)
     implicit none (type, external)
-      class(integrator_obj), intent (in) :: this
+      class(integrator_obj), intent (inout) :: this
       procedure(integrated_function_type) :: func
     end function integrate
   end interface

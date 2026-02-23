@@ -16,7 +16,7 @@ implicit none (type, external)
     call this%set_boundary_points(start, start + delta_Re)
   end procedure integration_path_part_parallel_Re_constructor
 
-  complex(dp) module function projection_function_obj(this, func, x) result(res)
+  recursive complex(dp) module function projection_function_obj(this, func, x) result(res)
   implicit none (type, external)
     class(integration_path_part_parallel_Re_obj), intent(in) :: this
     procedure(integrated_function_type) :: func

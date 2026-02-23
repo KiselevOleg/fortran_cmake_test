@@ -9,7 +9,7 @@ implicit none (type, external)
   module procedure integration_element_gauss4_constructor
   end procedure integration_element_gauss4_constructor
 
-  complex(dp) module function run(this, func, a, b) result(res)
+  recursive complex(dp) module function run(this, func, a, b) result(res)
   implicit none (type, external)
     class(integration_element_gauss4_obj), intent(in) :: this
     procedure(projection_function_type) :: func

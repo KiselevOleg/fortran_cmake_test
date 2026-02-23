@@ -25,7 +25,7 @@ private
 
   abstract interface
     !> compulting an inlegral value on a small linear path
-    complex(dp) function run_type(this, func, a, b)
+    recursive complex(dp) function run_type(this, func, a, b)
     import :: integration_element_obj, projection_function_type, dp
     implicit none (type, external)
       class(integration_element_obj), intent(in) :: this

@@ -40,7 +40,7 @@ private
     end function integration_template_recalculation_constructor
 
     !> compulting an inlegral value on a small linear path
-    complex(dp) module function run( &
+    recursive complex(dp) module function run( &
       this, &
       func, a, b, &
       integration_element, &
@@ -48,11 +48,11 @@ private
       normilized_delta &
     ) result(res)
     implicit none (type, external)
-      class(integration_template_recalculation_obj), intent(in) :: this
+      class(integration_template_recalculation_obj), intent(inout) :: this
       procedure(projection_function_type) :: func
       real(dp), intent(in) :: a
       real(dp), intent(in) :: b
-      class(integration_element_obj), intent(in) :: integration_element
+      class(integration_element_obj), intent(inout) :: integration_element
       !> required accuracy
       real(dp), intent(in) :: eps
       procedure(normilized_delta_type), optional :: normilized_delta

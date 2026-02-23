@@ -57,7 +57,7 @@ private
 
   abstract interface
     !> get a projection function got use it in real(dp) line integration
-    complex(dp) function projection_function_obj_type(this, func, x)
+    recursive complex(dp) function projection_function_obj_type(this, func, x)
     import :: integration_path_part_obj, integrated_function_type, dp
     implicit none (type, external)
       class(integration_path_part_obj), intent(in) :: this
