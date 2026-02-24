@@ -1,0 +1,288 @@
+@test
+module integration_element_test
+use integral_generator___integration_element, only: integration_element_obj
+use integral_generator___integration_element_gauss3, only : &
+  integration_element_gauss3_obj, integration_element_gauss3_constructor
+use integral_generator___integration_element_gauss4, only : &
+  integration_element_gauss4_obj, integration_element_gauss4_constructor
+use integral_generator___integration_element_gauss5, only : &
+  integration_element_gauss5_obj, integration_element_gauss5_constructor
+use integral_generator___integration_element_gauss6, only : &
+  integration_element_gauss6_obj, integration_element_gauss6_constructor
+use integral_generator___integration_element_gauss7, only : &
+  integration_element_gauss7_obj, integration_element_gauss7_constructor
+use integral_generator___integration_element_gauss8, only : &
+  integration_element_gauss8_obj, integration_element_gauss8_constructor
+use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
+  ieee_is_nan
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine integration_element_gauss3_test()
+  implicit none (type, external)
+    type(integration_element_gauss3_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss3_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 200
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss3_test
+
+  @test
+  subroutine integration_element_gauss4_test()
+  implicit none (type, external)
+    type(integration_element_gauss4_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss4_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 60
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss4_test
+
+  @test
+  subroutine integration_element_gauss5_test()
+  implicit none (type, external)
+    type(integration_element_gauss5_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss5_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 30
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss5_test
+
+  @test
+  subroutine integration_element_gauss6_test()
+  implicit none (type, external)
+    type(integration_element_gauss6_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss6_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 20
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss6_test
+
+  @test
+  subroutine integration_element_gauss7_test()
+  implicit none (type, external)
+    type(integration_element_gauss7_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss7_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 15
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss7_test
+
+  @test
+  subroutine integration_element_gauss8_test()
+  implicit none (type, external)
+    type(integration_element_gauss8_obj) :: element
+
+    real(dp) :: a, b
+    complex(dp) :: res
+
+    integer(i4) :: i, N
+
+    element = integration_element_gauss8_constructor()
+    a = 0d0; b = 3.14159265358979d0
+
+    N = 8
+    res = 0d0
+    associate(dx => (b - a) / N)
+      associate(x => [(a + dx * (i - 1), i = 1, N + 1)])
+        do i = 1, N
+          res = res + element%run(func = func, a = x(i), b = x(i + 1))
+        end do
+      end associate
+    end associate
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = res, &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_element_gauss8_test
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module integration_element_test

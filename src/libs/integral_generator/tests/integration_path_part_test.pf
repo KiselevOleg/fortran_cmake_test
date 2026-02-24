@@ -1,0 +1,299 @@
+@test
+module integration_path_part_test
+use integral_generator___integration_path_part, only: integration_path_part_obj, &
+  integrated_function_type, projection_function_type, normilized_delta_type
+use integral_generator___integration_path_part_parallel_Re, only: &
+  integration_path_part_parallel_Re_obj, integration_path_part_parallel_Re_constructor
+use integral_generator___integration_path_part_parallel_Im, only: &
+  integration_path_part_parallel_Im_obj, integration_path_part_parallel_Im_constructor
+use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
+  ieee_is_nan
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine integration_path_part_test_parallel_Re()
+  implicit none (type, external)
+    type(integration_path_part_parallel_Re_obj) :: part
+
+    part = integration_path_part_parallel_Re_constructor(start = (0d0, 0d0), delta_Re = 3d0)
+
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = part%get_start_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = part%get_end_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 0d0, &
+      actual = part%start_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 3d0, &
+      actual = part%end_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+
+    block
+      real(dp) :: x, dx
+
+      integer(i4) :: i
+
+      associate(dx_array => [1d-1, 1d-2, 2d-2, 1d-3, 1d-4])
+        do i = 1, 5
+          dx = dx_array(i)
+          x = part%start_projection_point()
+
+          do while (x < part%end_projection_point())
+            call assertEqual(&
+              expected = (1d0, 0d0), &
+              actual = part%normilized_delta(x = x, dx = dx), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+            call assertEqual(&
+              expected = func(x + (0d0, 0d0)), &
+              actual = part%projection_function(func = func, x = x), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+
+            x = x + dx
+          end do
+        end do
+      end associate
+    end block
+
+    call part%set_boundary_points((2d0, 3d0), (- 2d0, 3d0))
+
+    call assertEqual(&
+      expected = (2d0, 3d0), &
+      actual = part%get_start_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (- 2d0, 3d0), &
+      actual = part%get_end_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = - 2d0, &
+      actual = part%start_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 2d0, &
+      actual = part%end_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+
+    block
+      real(dp) :: x, dx
+
+      integer(i4) :: i
+
+      associate(dx_array => [1d-1, 1d-2, 2d-2, 1d-3, 1d-4])
+        do i = 1, 5
+          dx = dx_array(i)
+          x = part%start_projection_point()
+
+          do while (x < part%end_projection_point())
+            call assertEqual(&
+              expected = (- 1d0, 0d0), &
+              actual = part%normilized_delta(x = x, dx = dx), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+            call assertEqual(&
+              expected = func(x + (0d0, 3d0)), &
+              actual = part%projection_function(func = func, x = x), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+
+            x = x + dx
+          end do
+        end do
+      end associate
+    end block
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_path_part_test_parallel_Re
+
+  @test
+  subroutine integration_path_part_test_parallel_Im()
+  implicit none (type, external)
+    type(integration_path_part_parallel_Im_obj) :: part
+
+    part = integration_path_part_parallel_Im_constructor(start = (0d0, 0d0), delta_Im = 3d0)
+
+    call assertEqual(&
+      expected = (0d0, 0d0), &
+      actual = part%get_start_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (0d0, 3d0), &
+      actual = part%get_end_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 0d0, &
+      actual = part%start_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 3d0, &
+      actual = part%end_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+
+    block
+      real(dp) :: x, dx
+
+      integer(i4) :: i
+
+      associate(dx_array => [1d-1, 1d-2, 2d-2, 1d-3, 1d-4])
+        do i = 1, 5
+          dx = dx_array(i)
+          x = part%start_projection_point()
+
+          do while (x < part%end_projection_point())
+            call assertEqual(&
+              expected = (0d0, 1d0), &
+              actual = part%normilized_delta(x = x, dx = dx), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+            call assertEqual(&
+              expected = func(x * (0d0, 1d0) + (0d0, 0d0)), &
+              actual = part%projection_function(func = func, x = x), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+
+            x = x + dx
+          end do
+        end do
+      end associate
+    end block
+
+    call part%set_boundary_points((- 2d0, 3d0), (- 2d0, - 1d0))
+
+    call assertEqual(&
+      expected = (- 2d0, 3d0), &
+      actual = part%get_start_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (- 2d0, - 1d0), &
+      actual = part%get_end_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = - 1d0, &
+      actual = part%start_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = 3d0, &
+      actual = part%end_projection_point(), &
+      tolerance = 1d-15, &
+      message = "incorrect result" &
+    )
+
+    block
+      real(dp) :: x, dx
+
+      integer(i4) :: i
+
+      associate(dx_array => [1d-1, 1d-2, 2d-2, 1d-3, 1d-4])
+        do i = 1, 5
+          dx = dx_array(i)
+          x = part%start_projection_point()
+
+          do while (x < part%end_projection_point())
+            call assertEqual(&
+              expected = (0d0, - 1d0), &
+              actual = part%normilized_delta(x = x, dx = dx), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+            call assertEqual(&
+              expected = func(x * (0d0, 1d0) + (- 2d0, 0d0)), &
+              actual = part%projection_function(func = func, x = x), &
+              tolerance = 1d-15, &
+              message = "incorrect result" &
+            )
+
+            x = x + dx
+          end do
+        end do
+      end associate
+    end block
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+  end subroutine integration_path_part_test_parallel_Im
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module integration_path_part_test

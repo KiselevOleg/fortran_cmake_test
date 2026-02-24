@@ -1,0 +1,128 @@
+@test
+module integration_template_test
+use integral_generator___integration_template, only: integration_template_obj
+use integral_generator___integration_template_recalculation, only : &
+  integration_template_recalculation_obj, integration_template_recalculation_constructor
+use integral_generator___integration_element_gauss3, only : &
+  integration_element_gauss3_obj, integration_element_gauss3_constructor
+use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
+  ieee_is_nan
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine integration_template_recalculation_test()
+  implicit none (type, external)
+    type(integration_template_recalculation_obj) :: template
+    type(integration_element_gauss3_obj) :: element
+
+    template = integration_template_recalculation_constructor()
+    element = integration_element_gauss3_constructor()
+
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = template%run( &
+        func = func, a = 0d0, b = 3.14159265358979d0, &
+        integration_element = element, &
+        eps = 1d-9 &
+      ), &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (3d0, 0d0), &
+      actual = template%run( &
+        func = func, a = 0d0, b = 3.14159265358979d0, &
+        integration_element = element, &
+        eps = 1d-9, &
+        normilized_delta = norm_1 &
+      ), &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      expected = (0d0, 3d0), &
+      actual = template%run( &
+        func = func, a = 0d0, b = 3.14159265358979d0, &
+        integration_element = element, &
+        eps = 1d-9, &
+        normilized_delta = norm_i &
+      ), &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+    call assertEqual(&
+      !expected = (3d0, 0d0) - (2d0, 2d0) / sqrt(2d0), &
+      expected = (3d0, 0d0) * (1d0, 1d0) / sqrt(2d0), &
+      actual = template%run( &
+        func = func, a = 0d0, b = 3.14159265358979d0, &
+        integration_element = element, &
+        eps = 1d-9, &
+        normilized_delta = norm_1i &
+      ), &
+      tolerance = 1d-9, &
+      message = "incorrect result" &
+    )
+
+    contains
+
+    complex(dp) function func(x) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+
+      res = sin(x) + exp(- x * 2d1) * 2d1
+    end function func
+
+    pure complex(dp) function norm_1(x, dx) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+      real(dp), intent(in) :: dx
+
+      res = (1d0, 0d0)
+    end function norm_1
+    pure complex(dp) function norm_i(x, dx) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+      real(dp), intent(in) :: dx
+
+      res = (0d0, 1d0)
+    end function norm_i
+    pure complex(dp) function norm_1i(x, dx) result(res)
+    implicit none(type, external)
+      real(dp), intent(in) :: x
+      real(dp), intent(in) :: dx
+
+      ! res = (1d0, 0d0)
+      ! if (x > 3.14159265358979d0) res = (1d0, 1d0) / sqrt(2d0)
+      res = (1d0, 1d0) / sqrt(2d0)
+    end function norm_1i
+  end subroutine integration_template_recalculation_test
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module integration_template_test
