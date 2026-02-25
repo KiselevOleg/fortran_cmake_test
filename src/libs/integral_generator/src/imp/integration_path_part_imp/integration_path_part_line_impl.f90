@@ -1,0 +1,52 @@
+submodule(integration_path_part_line) integration_path_part_line_impl
+use system___assert, only: error_assert, error_not_assert, &
+  warning_assert, warning_not_assert, &
+  equals
+implicit none (type, external)
+
+  contains
+
+  module procedure integration_path_part_line_constructor
+    call error_not_assert(location = module_name // &
+      ".constructor", &
+      message = "a start and an end points must be different", &
+      condition = equals(start, end, 1d-7) &
+    )
+
+    call this%set_boundary_points(start, end)
+  end procedure integration_path_part_line_constructor
+
+  recursive complex(dp) module function projection_function_obj(this, func, x) result(res)
+  implicit none (type, external)
+    class(integration_path_part_line_obj), intent(in) :: this
+    procedure(integrated_function_type) :: func
+    real(dp), intent(in) :: x
+  !module procedure projection_function_obj
+    complex(dp) :: v
+
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      v = a + x * (b - a) / abs(b - a)
+
+      res = func(v)
+    end associate
+  !end procedure projection_function_obj
+  end function projection_function_obj
+  module procedure normilized_delta_obj
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = (b - a) / abs(b - a)
+    end associate
+  end procedure normilized_delta_obj
+  module procedure start_projection_point
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = 0d0
+    end associate
+  end procedure start_projection_point
+  module procedure end_projection_point
+    associate(a => this%get_start_point(), b => this%get_end_point())
+      res = abs(b - a)
+    end associate
+  end procedure end_projection_point
+
+  module procedure set_boundary_points_preparate
+  end procedure set_boundary_points_preparate
+end submodule integration_path_part_line_impl

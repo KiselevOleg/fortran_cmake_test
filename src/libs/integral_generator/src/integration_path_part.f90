@@ -1,6 +1,7 @@
 !> @author Haart
 !>
-!> transfer integration path part into lineral function (projection)
+!> transfer integration path part into integration a real function (projection) on [a, b] where
+!> a = start_projection_point(), b = end_projection_point()
 !>
 !> for example integration on a circle line -> integration on a line with
 !> or integration on a imag line to real line

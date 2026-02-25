@@ -1,6 +1,7 @@
 !> @author Haart
 !>
-!> transfer integration path part into lineral function (projection)
+!> transfer integration path part into integration a real function (projection) on [a, b] where
+!> a = start_projection_point(), b = end_projection_point()
 !>
 !> for parallel Im path
 module integration_path_part_parallel_Im

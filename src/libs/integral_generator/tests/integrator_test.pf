@@ -8,6 +8,7 @@ use integral_generator___integration, only: &
   integrated_function_type, &
   path_part_parallel_Im => integration_path_part_parallel_Im_constructor, &
   path_part_parallel_Re => integration_path_part_parallel_Re_constructor, &
+  path_part_line => integration_path_part_line_constructor, &
 
   element_gauss3 => integration_element_gauss3_constructor, &
   element_gauss4 => integration_element_gauss4_constructor, &
@@ -838,6 +839,140 @@ contains
       res = (0d0, 1d0)
     end function surf_5
   end subroutine integrator_test_surf_polar_system_Im_under_near_r_1
+
+  @test
+  subroutine integrator_test_path_part_line_circle_path_with_poles()
+    implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    real(dp), parameter :: eps = 1d-6
+
+    complex(dp), parameter :: res(3) = 2d0 * 3.14159265358979d0 * (0d0, 1d0) * &
+      [(0d0, 0d0), (1d0, 0d0), ((0.1d0, 1.1d0) ** 3)]
+
+    integer(i4) :: i
+    real(dp), parameter :: radius(10) = [(0.2d0 + 0.1d0 * real(i, dp), i = 1, 10)]
+
+    do i = 1, 10
+      block
+        type(integrator_builder_obj) :: builder
+        builder = integrator_builder_constructor()
+        call builder%add_new_path_part( &
+          path_part_line((0d0, 0d0), (1d0, 0d0)) &
+        )
+        call builder%part_integration_strategy( &
+          template_recalculation(), &
+          element_gauss6() &
+        )
+        call builder%set_accuration(eps)
+
+        call builder%set_boundary_points( &
+          builder%last_start((0d0, - 1d0) * radius(i)), &
+          builder%last_end((1d0, 0d0) * radius(i)) &
+        )
+        call builder%add_new_path_part( &
+          path_part_line(builder%last_end(), builder%last_end((0d0, 1d0) * radius(i))) &
+        )
+        call builder%add_new_path_part( &
+          path_part_line(builder%last_end(), builder%last_end((- 1d0, 0d0) * radius(i))) &
+        )
+        call builder%add_new_path_part( &
+          path_part_line(builder%last_end(), builder%last_end((0d0, - 1d0) * radius(i))) &
+        )
+
+        integrator = builder%build()
+      end block
+
+      call assertEqual(&
+        expected = res(1), &
+        actual = integrator%integrate(func_1), &
+        tolerance = eps, &
+        message = "incorrect result func_1" &
+      )
+      call assertEqual(&
+        expected = res(2), &
+        actual = integrator%integrate(func_2), &
+        tolerance = eps, &
+        message = "incorrect result func_2" &
+      )
+      call assertEqual(&
+        expected = res(3), &
+        actual = integrator%integrate(func_3), &
+        tolerance = eps, &
+        message = "incorrect result func_3" &
+      )
+      call assertEqual(&
+        expected = sum(res), &
+        actual = integrator%integrate(func_123), &
+        tolerance = eps, &
+        message = "incorrect result func_123" &
+      )
+    end do
+  contains
+    complex(dp) function func_1(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) / x
+    end function func_1
+    complex(dp) function func_2(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = sin(x) / x / x
+    end function func_2
+    complex(dp) function func_3(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = (x + (0d0, 1d0)) ** 3 / (x - (0.1d0, 0.1d0))
+    end function func_3
+
+    complex(dp) function func_123(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      res = func_1(x) + func_2(x) + func_3(x)
+    end function func_123
+  end subroutine integrator_test_path_part_line_circle_path_with_poles
+
+  @test
+  subroutine integrator_test_create_simple_single_part_line()
+  implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part( &
+        path_part_line(builder%last_start((- 1d0, 4d0)), builder%last_end((1d0, 2d0))) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss6() &
+      )
+      call builder%set_accuration(1d-3)
+      integrator = builder%build()
+    end block
+
+    call assertEqual(&
+      expected = - cos((1d0, 2d0)) + cos((- 1d0, 4d0)), &
+      actual = integrator%integrate(func), &
+      tolerance = 1d-3, &
+      message = "incorrect result" &
+    )
+  contains
+    complex(dp) function func(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      associate(a => (- 1d0, 4d0), b => (1d0, 2d0))
+        if (abs((x - a) / abs (x - a) - (b - a) / abs (b - a)) > 1d-6) error stop "incorrect x"
+      end associate
+
+      res = sin(x)
+    end function func
+  end subroutine integrator_test_create_simple_single_part_line
 
 
 
