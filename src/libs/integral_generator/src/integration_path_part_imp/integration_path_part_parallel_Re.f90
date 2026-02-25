@@ -7,7 +7,7 @@
 module integration_path_part_parallel_Re
 use integration_path_part, only: &
   integration_path_part_obj, &
-  integrated_function_type, projection_function_type, normilized_delta_type
+  integrated_function_type, projection_function_type, normalized_delta_type
 use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
   i1 => int8, i2 => int16, i4 => int32, i8 => int64
 implicit none (type, external)
@@ -21,7 +21,7 @@ private
   private
   contains
     procedure, pass :: projection_function => projection_function_obj
-    procedure, pass :: normilized_delta => normilized_delta_obj
+    procedure, pass :: normalized_delta => normalized_delta_obj
     procedure, pass :: start_projection_point => start_projection_point
     procedure, pass :: end_projection_point => end_projection_point
 
@@ -47,12 +47,12 @@ private
     !> get a dirrection of current integral step
     !> delta -> abs(delta) for real projection function integration
     !> and delta mult for considering imag part
-    pure complex(dp) module function normilized_delta_obj(this, x, dx) result(res)
+    pure complex(dp) module function normalized_delta_obj(this, x, dx) result(res)
     implicit none (type, external)
       class(integration_path_part_parallel_Re_obj), intent(in) :: this
       real(dp), intent(in) :: x
       real(dp), intent(in) :: dx
-    end function normilized_delta_obj
+    end function normalized_delta_obj
     !> get a start point of projection
     !> a start value for projection function argument
     pure real(dp) module function start_projection_point(this) result(res)

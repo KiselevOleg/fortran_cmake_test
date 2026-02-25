@@ -1,0 +1,1004 @@
+@test
+module integrator_custom_curve_test
+use integral_generator___integration, only: &
+  integrator_obj, integrator_builder_obj, integrator_builder_constructor, &
+
+  template_recalculation => integration_template_recalculation_constructor, &
+
+  integrated_function_type, &
+  path_part_parallel_Im => integration_path_part_parallel_Im_constructor, &
+  path_part_parallel_Re => integration_path_part_parallel_Re_constructor, &
+  path_part_line => integration_path_part_line_constructor, &
+  path_part_custom_curve => integration_path_part_custom_curve_constructor, &
+
+  element_gauss3 => integration_element_gauss3_constructor, &
+  element_gauss4 => integration_element_gauss4_constructor, &
+  element_gauss5 => integration_element_gauss5_constructor, &
+  element_gauss6 => integration_element_gauss6_constructor, &
+  element_gauss7 => integration_element_gauss7_constructor, &
+  element_gauss8 => integration_element_gauss8_constructor
+use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
+  ieee_is_nan
+use PFUnit, only: &
+  assertEqual, & ! assertEqual(expected, actual, [tolerance], [message])
+  assertNotEqual, & ! assertNotEqual(expected, actual, [tolerance], [message])
+  assertTrue ! assertTrue(condition, [message])
+  ! assertFalse, & ! assertFalse(condition, [message])
+  ! assertAssociated, & ! assertAssociated(...)
+  ! assertNotAssociated, & ! assertNotAssociated(...)
+  ! assertEquivalent ! assertEquivalent(...)
+use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
+  i1 => int8, i2 => int16, i4 => int32, i8 => int64
+implicit none (type, external)
+public
+
+contains
+
+  @test
+  subroutine integrator_test_create_simple_single_part()
+  implicit none (type, external)
+    type(integrator_obj) :: integrator
+
+    block
+      type(integrator_builder_obj) :: builder
+      builder = integrator_builder_constructor()
+      call builder%add_new_path_part( &
+        path_part_custom_curve( &
+          builder%last_start((- 1d0, 0d0)), builder%last_end((5d0, 0d0)), &
+          curve, 3d0, .false. &
+        ) &
+      )
+      call builder%part_integration_strategy( &
+        template_recalculation(), &
+        element_gauss6() &
+      )
+      call builder%set_accuration(1d-7)
+      integrator = builder%build()
+    end block
+
+    call assertEqual(&
+      expected = (6d0, 0d0), &
+      actual = integrator%integrate(func), &
+      tolerance = 1d-3, &
+      message = "incorrect result" &
+    )
+  contains
+    complex(dp) function func(x) result(res)
+    implicit none (type, external)
+      complex(dp), intent(in) :: x
+
+      if (abs(abs(x - (2d0, 0d0)) - 3d0) > 1d-10) error stop "incorrect x"
+
+      res = 1d0
+    end function func
+    pure real(dp) function curve(x) result(res)
+    implicit none (type, external)
+      real(dp), intent(in) :: x
+
+      res = - sqrt(1d0 - x ** 2)
+      !res = sin(x * 3.14159265358979d0)
+      !res = 1d0 - abs(x)
+      !res = 0d0
+    end function curve
+  end subroutine integrator_test_create_simple_single_part
+
+  ! @test
+  ! subroutine integrator_test_create_simple_single_part_accuration_element()
+  ! implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+  !   type(integrator_builder_obj) :: builder
+
+  !   integer(i4) :: i, j, element
+
+  !   integer(i4), parameter :: func_size = 4, eps_size = 9
+  !   complex(dp), parameter :: &
+  !     a(func_size) = [0d0, - 40d0, 0d0, &
+  !       - 1.5d0 * 3.14159265358979d0], &
+  !     b(func_size) = [3.14159265358979d0, 40d0, 2d0, &
+  !       4d0 * 3.14159265358979d0], &
+  !     res(func_size) = [(2d0, 0d0), (2d0, 0d0), (2d0, 0d0), &
+  !       (- 1d0, 0d0)]
+  !   real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
+  !   integer(i4) :: func_index
+
+  !   do element = 3, 8
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part(path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0))
+  !     select case (element)
+  !     case (3)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss3() &
+  !       )
+  !     case (4)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss4() &
+  !       )
+  !     case (5)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss5() &
+  !       )
+  !     case (6)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss6() &
+  !       )
+  !     case (7)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss7() &
+  !       )
+  !     case (8)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss8() &
+  !       )
+  !     case default
+  !       error stop "unknown element"
+  !     end select
+
+  !     do i = 1, func_size
+  !       func_index = i
+  !       call builder%set_boundary_points(a(i), b(i))
+
+  !       do j = 1, eps_size
+  !         call builder%set_accuration(eps(j))
+  !         integrator = builder%build()
+
+  !         call assertEqual(&
+  !           expected = res(i), &
+  !           actual = integrator%integrate(func), &
+  !           tolerance = eps(j), &
+  !           message = "incorrect result" &
+  !         )
+  !       end do
+  !     end do
+  !   end do
+  ! contains
+  !   complex(dp) function func(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     select case (func_index)
+  !     case (1)
+  !       res = func_sin(x)
+  !     case (2)
+  !       res = func_exp(x)
+  !     case (3)
+  !       res = func_pol(x)
+  !     case (4)
+  !       res = func_sin(x)
+  !     case default
+  !       res = ieee_value(0d0, ieee_signaling_nan)
+  !     end select
+  !   end function func
+
+  !   complex(dp) function func_sin(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x)
+  !   end function func_sin
+  !   complex(dp) function func_exp(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = exp(- abs(x))
+  !   end function func_exp
+  !   complex(dp) function func_pol(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = x ** 7 / 16d0
+  !   end function func_pol
+  ! end subroutine integrator_test_create_simple_single_part_accuration_element
+
+  ! @test
+  ! subroutine integrator_test_create_complex_single_part_accuration_element()
+  ! implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+  !   type(integrator_builder_obj) :: builder
+
+  !   integer(i4) :: i, j, element
+
+  !   integer(i4), parameter :: func_size = 8, eps_size = 9
+  !   complex(dp), parameter :: &
+  !     a(func_size) = [ &
+  !       (- 1d0, 0d0), (0d0, 1d0), &
+  !       (- 1d0, 0d0), (0d0, 1d0), &
+  !       (- 1d0, 0d0), (0d0, 1d0), &
+  !       (- 1d0, 0d0), (0d0, 1d0) &
+  !     ], &
+  !     b(func_size) = [ &
+  !       (- 1d0, - 3d0), (0d0, 2d0), &
+  !       (- 1d0, - 3d0), (0d0, 2d0), &
+  !       (- 1d0, - 3d0), (0d0, 2d0), &
+  !       (- 1d0, - 3d0), (0d0, 2d0) &
+  !     ], &
+  !     res(func_size) = [ &
+  !       (0d0, 0d0), (0d0, 0d0), &
+  !       (0d0, - 9d0), (0d0, 3d0), &
+  !       (6d0, - 3d0), (- 2d0, 1d0), &
+  !       sin(b(7)) - sin(a(7)), sin(b(8)) - sin(a(8)) &
+  !     ]
+  !   real(dp), parameter :: eps(eps_size) = [(1d-1 ** real(i, dp), i = 1, eps_size)]
+  !   integer(i4) :: func_index
+
+  !   do element = 3, 8
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part(path_part_parallel_Im(builder%last_start((0d0, 0d0)), 1d0))
+  !     select case (element)
+  !     case (3)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss3() &
+  !       )
+  !     case (4)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss4() &
+  !       )
+  !     case (5)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss5() &
+  !       )
+  !     case (6)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss6() &
+  !       )
+  !     case (7)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss7() &
+  !       )
+  !     case (8)
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss8() &
+  !       )
+  !     case default
+  !       error stop "unknown element"
+  !     end select
+
+  !     do i = 1, func_size
+  !       func_index = i
+  !       call builder%set_boundary_points(a(i), b(i))
+
+  !       do j = 1, eps_size
+  !         call builder%set_accuration(eps(j))
+  !         integrator = builder%build()
+
+  !         call assertEqual(&
+  !           expected = res(i), &
+  !           actual = integrator%integrate(func), &
+  !           tolerance = eps(j), &
+  !           message = "incorrect result" &
+  !         )
+  !       end do
+  !     end do
+  !   end do
+  ! contains
+  !   complex(dp) function func(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     select case (func_index)
+  !     case (1)
+  !       res = func_0(x)
+  !     case (2)
+  !       res = func_0(x)
+  !     case (3)
+  !       res = func_3(x)
+  !     case (4)
+  !       res = func_3(x)
+  !     case (5)
+  !       res = func_1_2i(x)
+  !     case (6)
+  !       res = func_1_2i(x)
+  !     case (7)
+  !       res = func_cos(x)
+  !     case (8)
+  !       res = func_cos(x)
+  !     case default
+  !       res = ieee_value(0d0, ieee_signaling_nan)
+  !     end select
+  !   end function func
+
+  !   complex(dp) function func_0(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = 0d0
+  !   end function func_0
+  !   complex(dp) function func_3(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = 3d0
+  !   end function func_3
+  !   complex(dp) function func_1_2i(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = (1d0, 2d0)
+  !   end function func_1_2i
+  !   complex(dp) function func_cos(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = cos(x)
+  !   end function func_cos
+  ! end subroutine integrator_test_create_complex_single_part_accuration_element
+
+  ! @test
+  ! subroutine integrator_test_circle_paths()
+  !   implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+
+  !   real(dp), parameter :: eps = 1d-6
+
+  !   block
+  !     type(integrator_builder_obj) :: builder
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0) &
+  !     )
+  !     call builder%part_integration_strategy( &
+  !       template_recalculation(), &
+  !       element_gauss6() &
+  !     )
+  !     call builder%set_accuration(eps)
+
+  !     call builder%set_boundary_points( &
+  !       builder%last_start((- 1d0, - 1d0)), builder%last_end((1d0, - 1d0)) &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Im(builder%last_end(), 2d0) &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_end(), - 2d0) &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Im(builder%last_end(), - 2d0) &
+  !     )
+
+  !     integrator = builder%build()
+  !   end block
+
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_sin), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_sin" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_exp), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_exp" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_exp_sin), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_exp_sin" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_1" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_0), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_0" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func_i), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func_i" &
+  !   )
+  !   call assertEqual(&
+  !     expected = (0d0, 0d0), &
+  !     actual = integrator%integrate(func__1_2i), &
+  !     tolerance = eps, &
+  !     message = "incorrect result func__1_2i" &
+  !   )
+  ! contains
+  !   complex(dp) function func_sin(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x)
+  !   end function func_sin
+  !   complex(dp) function func_exp(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = exp(x)
+  !   end function func_exp
+  !   complex(dp) function func_exp_sin(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = exp(- x + sin(x)) + sin(x)
+  !   end function func_exp_sin
+  !   complex(dp) function func_1(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = 1d0
+  !   end function func_1
+  !   complex(dp) function func_0(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = 0d0
+  !   end function func_0
+  !   complex(dp) function func_i(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = (0d0, 1d0)
+  !   end function func_i
+  !   complex(dp) function func__1_2i(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = (- 1d0, 2d0)
+  !   end function func__1_2i
+  ! end subroutine integrator_test_circle_paths
+
+  ! @test
+  ! subroutine integrator_test_circle_paths_with_poles()
+  !   implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+
+  !   real(dp), parameter :: eps = 1d-6
+
+  !   complex(dp), parameter :: res(3) = 2d0 * 3.14159265358979d0 * (0d0, 1d0) * &
+  !     [(0d0, 0d0), (1d0, 0d0), ((0.1d0, 1.1d0) ** 3)]
+
+  !   integer(i4) :: i
+  !   real(dp), parameter :: radius(10) = [(0.1d0 + 0.1d0 * real(i, dp), i = 1, 10)]
+
+  !   do i = 1, 10
+  !     block
+  !       type(integrator_builder_obj) :: builder
+  !       builder = integrator_builder_constructor()
+  !       call builder%add_new_path_part( &
+  !         path_part_parallel_Re(builder%last_start((0d0, 0d0)), 1d0) &
+  !       )
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss6() &
+  !       )
+  !       call builder%set_accuration(eps)
+
+  !       call builder%set_boundary_points( &
+  !         builder%last_start((- 1d0, - 1d0) * radius(i)), &
+  !         builder%last_end((1d0, - 1d0) * radius(i)) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_parallel_Im(builder%last_end(), 2d0 * radius(i)) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_parallel_Re(builder%last_end(), - 2d0 * radius(i)) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_parallel_Im(builder%last_end(), - 2d0 * radius(i)) &
+  !       )
+
+  !       integrator = builder%build()
+  !     end block
+
+  !     call assertEqual(&
+  !       expected = res(1), &
+  !       actual = integrator%integrate(func_1), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_1" &
+  !     )
+  !     call assertEqual(&
+  !       expected = res(2), &
+  !       actual = integrator%integrate(func_2), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_2" &
+  !     )
+  !     call assertEqual(&
+  !       expected = res(3), &
+  !       actual = integrator%integrate(func_3), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_3" &
+  !     )
+  !     call assertEqual(&
+  !       expected = sum(res), &
+  !       actual = integrator%integrate(func_123), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_123" &
+  !     )
+  !   end do
+  ! contains
+  !   complex(dp) function func_1(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x) / x
+  !   end function func_1
+  !   complex(dp) function func_2(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x) / x / x
+  !   end function func_2
+  !   complex(dp) function func_3(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = (x + (0d0, 1d0)) ** 3 / (x - (0.1d0, 0.1d0))
+  !   end function func_3
+
+  !   complex(dp) function func_123(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = func_1(x) + func_2(x) + func_3(x)
+  !   end function func_123
+  ! end subroutine integrator_test_circle_paths_with_poles
+
+  ! @test
+  ! subroutine integrator_test_regilar_surf()
+  !   implicit none (type, external)
+  !   type(integrator_obj) :: integrator_inner, integrator_outer
+
+  !   real(dp), parameter :: eps = 1d-6
+
+  !   complex(dp), parameter :: res(5) = &
+  !     [(3.14159265358979d0, 0d0), (0d0, 0d0), (0d0, 0d0), (1d4, 0d0), (0d0, 1d4)]
+
+  !   complex(dp) :: y
+
+  !   integer(i4) :: surf_number
+
+  !   block
+  !     type(integrator_builder_obj) :: builder
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_start((- 50d0, 0d0)), 100d0) &
+  !     )
+  !     call builder%part_integration_strategy( &
+  !       template_recalculation(), &
+  !       element_gauss3() &
+  !     )
+  !     call builder%set_accuration(eps)
+  !     integrator_inner = builder%build()
+  !     integrator_outer = builder%build()
+  !   end block
+
+  !   surf_number = 1
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_1" &
+  !   )
+  !   surf_number = 2
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_2" &
+  !   )
+  !   surf_number = 3
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_3" &
+  !   )
+  !   surf_number = 4
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_4" &
+  !   )
+  !   surf_number = 5
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_5" &
+  !   )
+  ! contains
+
+  !   complex(dp) function inner_int1(y_) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: y_
+
+  !     y = y_
+
+  !     res = integrator_inner%integrate(inner_int2)
+  !   end function inner_int1
+  !   complex(dp) function inner_int2(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = surf(x, y)
+  !   end function inner_int2
+
+  !   complex(dp) function surf(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     select case (surf_number)
+  !     case (1)
+  !       res = surf_1(x, y)
+  !     case (2)
+  !       res = surf_2(x, y)
+  !     case (3)
+  !       res = surf_3(x, y)
+  !     case (4)
+  !       res = surf_4(x, y)
+  !     case (5)
+  !       res = surf_5(x, y)
+  !     case default
+  !       error stop "unknown surf_number"
+  !     end select
+  !   end function surf
+
+  !   complex(dp) function surf_1(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = exp(- x ** 2 - y ** 2)
+  !   end function surf_1
+  !   complex(dp) function surf_2(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = exp(- x ** 2 - y ** 2) * sin(x * y)
+  !   end function surf_2
+  !   complex(dp) function surf_3(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (0d0, 0d0)
+  !   end function surf_3
+  !   complex(dp) function surf_4(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (1d0, 0d0)
+  !   end function surf_4
+  !   complex(dp) function surf_5(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (0d0, 1d0)
+  !   end function surf_5
+  ! end subroutine integrator_test_regilar_surf
+
+  ! @test
+  ! subroutine integrator_test_surf_polar_system_Im_under_near_r_1()
+  ! implicit none (type, external)
+  !   type(integrator_obj) :: integrator_inner, integrator_outer
+
+  !   real(dp), parameter :: eps = 1d-6
+
+  !   complex(dp), parameter :: res(5) = &
+  !     [(3.14159265358979d0, 0d0), (0d0, 0d0), (0d0, 0d0), &
+  !     3.14159265358979d0 * 50d0 ** 2 * (1d0, 0d0), 3.14159265358979d0 * 50d0 ** 2 * (0d0, 1d0)]
+
+  !   complex(dp) :: r
+
+  !   integer(i4) :: surf_number
+
+  !   block
+  !     type(integrator_builder_obj) :: builder
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Im(builder%last_start((1d-9, 0d0)), - 0.01d0) &
+  !     )
+  !     call builder%part_integration_strategy( &
+  !       template_recalculation(), &
+  !       element_gauss3() &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_end(), 5d0) &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Im(builder%last_end(), 0.01d0) &
+  !     )
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_end(), 45d0) &
+  !     )
+  !     call builder%set_accuration(eps)
+  !     integrator_outer = builder%build()
+  !   end block
+  !   block
+  !     type(integrator_builder_obj) :: builder
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part( &
+  !       path_part_parallel_Re(builder%last_start((0d0, 0d0)), 2d0 * 3.14159265358979d0) &
+  !     )
+  !     call builder%part_integration_strategy( &
+  !       template_recalculation(), &
+  !       element_gauss3() &
+  !     )
+  !     call builder%set_accuration(eps)
+  !     integrator_inner = builder%build()
+  !   end block
+
+  !   surf_number = 1
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_1" &
+  !   )
+  !   surf_number = 2
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_2" &
+  !   )
+  !   surf_number = 3
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_3" &
+  !   )
+  !   surf_number = 4
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_4" &
+  !   )
+  !   surf_number = 5
+  !   call assertEqual(&
+  !     expected = res(surf_number), &
+  !     actual = integrator_outer%integrate(inner_int1), &
+  !     tolerance = eps, &
+  !     message = "incorrect result surf_5" &
+  !   )
+  ! contains
+
+  !   complex(dp) function inner_int1(r_) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: r_
+
+  !     r = r_
+
+  !     res = integrator_inner%integrate(inner_int2)
+  !   end function inner_int1
+  !   complex(dp) function inner_int2(phi) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: phi
+
+  !     res = surf(x = r * cos(phi), y = r * sin(phi)) * r
+  !   end function inner_int2
+
+  !   complex(dp) function surf(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     select case (surf_number)
+  !     case (1)
+  !       res = surf_1(x, y)
+  !     case (2)
+  !       res = surf_2(x, y)
+  !     case (3)
+  !       res = surf_3(x, y)
+  !     case (4)
+  !       res = surf_4(x, y)
+  !     case (5)
+  !       res = surf_5(x, y)
+  !     case default
+  !       error stop "unknown surf_number"
+  !     end select
+  !   end function surf
+
+  !   complex(dp) function surf_1(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = exp(- x ** 2 - y ** 2)
+  !   end function surf_1
+  !   complex(dp) function surf_2(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = exp(- x ** 2 - y ** 2) * sin(x * y)
+  !   end function surf_2
+  !   complex(dp) function surf_3(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (0d0, 0d0)
+  !   end function surf_3
+  !   complex(dp) function surf_4(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (1d0, 0d0)
+  !   end function surf_4
+  !   complex(dp) function surf_5(x, y) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+  !     complex(dp), intent(in) :: y
+
+  !     res = (0d0, 1d0)
+  !   end function surf_5
+  ! end subroutine integrator_test_surf_polar_system_Im_under_near_r_1
+
+  ! @test
+  ! subroutine integrator_test_path_part_line_circle_path_with_poles()
+  !   implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+
+  !   real(dp), parameter :: eps = 1d-6
+
+  !   complex(dp), parameter :: res(3) = 2d0 * 3.14159265358979d0 * (0d0, 1d0) * &
+  !     [(0d0, 0d0), (1d0, 0d0), ((0.1d0, 1.1d0) ** 3)]
+
+  !   integer(i4) :: i
+  !   real(dp), parameter :: radius(10) = [(0.2d0 + 0.1d0 * real(i, dp), i = 1, 10)]
+
+  !   do i = 1, 10
+  !     block
+  !       type(integrator_builder_obj) :: builder
+  !       builder = integrator_builder_constructor()
+  !       call builder%add_new_path_part( &
+  !         path_part_line((0d0, 0d0), (1d0, 0d0)) &
+  !       )
+  !       call builder%part_integration_strategy( &
+  !         template_recalculation(), &
+  !         element_gauss6() &
+  !       )
+  !       call builder%set_accuration(eps)
+
+  !       call builder%set_boundary_points( &
+  !         builder%last_start((0d0, - 1d0) * radius(i)), &
+  !         builder%last_end((1d0, 0d0) * radius(i)) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_line(builder%last_end(), builder%last_end((0d0, 1d0) * radius(i))) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_line(builder%last_end(), builder%last_end((- 1d0, 0d0) * radius(i))) &
+  !       )
+  !       call builder%add_new_path_part( &
+  !         path_part_line(builder%last_end(), builder%last_end((0d0, - 1d0) * radius(i))) &
+  !       )
+
+  !       integrator = builder%build()
+  !     end block
+
+  !     call assertEqual(&
+  !       expected = res(1), &
+  !       actual = integrator%integrate(func_1), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_1" &
+  !     )
+  !     call assertEqual(&
+  !       expected = res(2), &
+  !       actual = integrator%integrate(func_2), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_2" &
+  !     )
+  !     call assertEqual(&
+  !       expected = res(3), &
+  !       actual = integrator%integrate(func_3), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_3" &
+  !     )
+  !     call assertEqual(&
+  !       expected = sum(res), &
+  !       actual = integrator%integrate(func_123), &
+  !       tolerance = eps, &
+  !       message = "incorrect result func_123" &
+  !     )
+  !   end do
+  ! contains
+  !   complex(dp) function func_1(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x) / x
+  !   end function func_1
+  !   complex(dp) function func_2(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = sin(x) / x / x
+  !   end function func_2
+  !   complex(dp) function func_3(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = (x + (0d0, 1d0)) ** 3 / (x - (0.1d0, 0.1d0))
+  !   end function func_3
+
+  !   complex(dp) function func_123(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     res = func_1(x) + func_2(x) + func_3(x)
+  !   end function func_123
+  ! end subroutine integrator_test_path_part_line_circle_path_with_poles
+
+  ! @test
+  ! subroutine integrator_test_create_simple_single_part_line()
+  ! implicit none (type, external)
+  !   type(integrator_obj) :: integrator
+
+  !   block
+  !     type(integrator_builder_obj) :: builder
+  !     builder = integrator_builder_constructor()
+  !     call builder%add_new_path_part( &
+  !       path_part_line(builder%last_start((- 1d0, 4d0)), builder%last_end((1d0, 2d0))) &
+  !     )
+  !     call builder%part_integration_strategy( &
+  !       template_recalculation(), &
+  !       element_gauss6() &
+  !     )
+  !     call builder%set_accuration(1d-3)
+  !     integrator = builder%build()
+  !   end block
+
+  !   call assertEqual(&
+  !     expected = - cos((1d0, 2d0)) + cos((- 1d0, 4d0)), &
+  !     actual = integrator%integrate(func), &
+  !     tolerance = 1d-3, &
+  !     message = "incorrect result" &
+  !   )
+  ! contains
+  !   complex(dp) function func(x) result(res)
+  !   implicit none (type, external)
+  !     complex(dp), intent(in) :: x
+
+  !     associate(a => (- 1d0, 4d0), b => (1d0, 2d0))
+  !       if (abs((x - a) / abs (x - a) - (b - a) / abs (b - a)) > 1d-6) error stop "incorrect x"
+  !     end associate
+
+  !     res = sin(x)
+  !   end function func
+  ! end subroutine integrator_test_create_simple_single_part_line
+
+
+
+
+
+  @before
+  subroutine BeforeAll()
+  implicit none (type, external)
+    print *, "before all tests"
+  end subroutine BeforeAll
+
+  @after
+  subroutine AfterAll()
+  implicit none (type, external)
+    print *, "after all test"
+  end subroutine AfterAll
+end module integrator_custom_curve_test

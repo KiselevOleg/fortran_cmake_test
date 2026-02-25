@@ -47,7 +47,7 @@ contains
         func = func, a = 0d0, b = 3.14159265358979d0, &
         integration_element = element, &
         eps = 1d-9, &
-        normilized_delta = norm_1 &
+        normalized_delta = norm_1 &
       ), &
       tolerance = 1d-9, &
       message = "incorrect result" &
@@ -58,7 +58,7 @@ contains
         func = func, a = 0d0, b = 3.14159265358979d0, &
         integration_element = element, &
         eps = 1d-9, &
-        normilized_delta = norm_i &
+        normalized_delta = norm_i &
       ), &
       tolerance = 1d-9, &
       message = "incorrect result" &
@@ -70,7 +70,7 @@ contains
         func = func, a = 0d0, b = 3.14159265358979d0, &
         integration_element = element, &
         eps = 1d-9, &
-        normilized_delta = norm_1i &
+        normalized_delta = norm_1i &
       ), &
       tolerance = 1d-9, &
       message = "incorrect result" &

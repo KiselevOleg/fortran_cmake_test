@@ -20,6 +20,8 @@ set(SRC_FILES
   src/imp/integration_path_part_imp/integration_path_part_parallel_Im_impl.f90
   src/integration_path_part_imp/integration_path_part_line.f90
   src/imp/integration_path_part_imp/integration_path_part_line_impl.f90
+  src/integration_path_part_imp/integration_path_part_custom_curve.f90
+  src/imp/integration_path_part_imp/integration_path_part_custom_curve_impl.f90
 
   src/integration_template.f90
   src/integration_template_imp/integration_template_recalculation.f90

@@ -31,12 +31,18 @@ implicit none (type, external)
     end associate
   !end procedure projection_function_obj
   end function projection_function_obj
-  module procedure normilized_delta_obj
+  module procedure normalized_delta_obj
+    call error_assert(location = module_name // &
+      ".normalized_delta_obj", &
+      message = "dx > 0d0", &
+      condition = dx > 0d0 &
+    )
+
     associate(a => this%get_start_point(), b => this%get_end_point())
       res = (1d0, 0d0)
       if (real(a) > real(b)) res = - res
     end associate
-  end procedure normilized_delta_obj
+  end procedure normalized_delta_obj
   module procedure start_projection_point
     associate(a => this%get_start_point(), b => this%get_end_point())
       res = min(real(a), real(b))

@@ -9,6 +9,7 @@ use integral_generator___integration, only: &
   path_part_parallel_Im => integration_path_part_parallel_Im_constructor, &
   path_part_parallel_Re => integration_path_part_parallel_Re_constructor, &
   path_part_line => integration_path_part_line_constructor, &
+  path_part_custom_curve => integration_path_part_custom_curve_constructor, &
 
   element_gauss3 => integration_element_gauss3_constructor, &
   element_gauss4 => integration_element_gauss4_constructor, &

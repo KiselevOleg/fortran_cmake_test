@@ -17,7 +17,7 @@ private
     "integral_generator___integration_path_part"
 
   public :: integration_path_part_obj
-  public :: integrated_function_type, projection_function_type, normilized_delta_type
+  public :: integrated_function_type, projection_function_type, normalized_delta_type
 
   type, abstract :: integration_path_part_obj
   private
@@ -25,7 +25,7 @@ private
     complex(dp) :: end_point
   contains
     procedure(projection_function_obj_type), deferred, pass :: projection_function
-    procedure(normilized_delta_obj_type), deferred, pass :: normilized_delta
+    procedure(normalized_delta_obj_type), deferred, pass :: normalized_delta
     procedure(start_projection_point_type), deferred, pass :: start_projection_point
     procedure(end_projection_point_type), deferred, pass :: end_projection_point
 
@@ -48,12 +48,12 @@ private
     implicit none (type, external)
       real(dp), intent(in) :: x
     end function projection_function_type
-    pure complex(dp) function normilized_delta_type(x, dx)
+    pure complex(dp) function normalized_delta_type(x, dx)
     import :: integration_path_part_obj, dp
     implicit none (type, external)
       real(dp), intent(in) :: x
       real(dp), intent(in) :: dx
-    end function normilized_delta_type
+    end function normalized_delta_type
   end interface
 
   abstract interface
@@ -66,16 +66,18 @@ private
       real(dp), intent(in) :: x
     end function projection_function_obj_type
     !> get a dirrection of current integral step
-    !> delta -> abs(delta) for real projection function integration
-    !> and delta mult for considering imag part
-    pure complex(dp) function normilized_delta_obj_type(this, x, dx)
+    !>
+    !> delta - multiply koeficient for real projection function integration
+    !> that connects the real projection and coresponding imag line
+    pure complex(dp) function normalized_delta_obj_type(this, x, dx)
     import :: integration_path_part_obj, dp
     implicit none (type, external)
       class(integration_path_part_obj), intent(in) :: this
       real(dp), intent(in) :: x
       real(dp), intent(in) :: dx
-    end function normilized_delta_obj_type
+    end function normalized_delta_obj_type
     !> get a start point of projection
+    !>
     !> a start value for projection function argument
     pure real(dp) function start_projection_point_type(this)
       import :: integration_path_part_obj, dp
@@ -83,6 +85,7 @@ private
       class(integration_path_part_obj), intent(in) :: this
     end function start_projection_point_type
     !> get an end point of projection
+    !>
     !> an end value for projection function argument
     pure real(dp) function end_projection_point_type(this)
       import :: integration_path_part_obj, dp
