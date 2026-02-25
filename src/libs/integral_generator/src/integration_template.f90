@@ -14,7 +14,7 @@
 module integration_template
 use integration_path_part, only: &
   integration_path_part_obj, &
-  integrated_function_type, projection_function_type, normilized_delta_type
+  integrated_function_type, projection_function_type, normalized_delta_type
 use integration_element, only: integration_element_obj
 use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
   i1 => int8, i2 => int16, i4 => int32, i8 => int64
@@ -33,7 +33,7 @@ private
   abstract interface
     !> compulting an inlegral value on a small linear path
     recursive &
-    complex(dp) function run_type(this, func, a, b, integration_element, eps, normilized_delta)
+    complex(dp) function run_type(this, func, a, b, integration_element, eps, normalized_delta)
     import :: &
       integration_element_obj, &
       integration_template_obj, &
@@ -47,7 +47,7 @@ private
       class(integration_element_obj), intent(inout) :: integration_element
       !> required accuracy
       real(dp), intent(in) :: eps
-      procedure(normilized_delta_type), optional :: normilized_delta
+      procedure(normalized_delta_type), optional :: normalized_delta
     end function run_type
   end interface
 end module integration_template

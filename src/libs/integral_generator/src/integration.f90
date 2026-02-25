@@ -136,7 +136,7 @@ use integration_template_recalculation, only: &
 
 use integration_path_part, only: &
   integration_path_part_obj, &
-  integrated_function_type, projection_function_type, normilized_delta_type
+  integrated_function_type, projection_function_type, normalized_delta_type
 
 use integration_path_part_parallel_Im, only: &
   integration_path_part_parallel_Im_obj, integration_path_part_parallel_Im_constructor
@@ -144,6 +144,8 @@ use integration_path_part_parallel_Re, only: &
   integration_path_part_parallel_Re_obj, integration_path_part_parallel_Re_constructor
 use integration_path_part_line, only: &
   integration_path_part_line_obj, integration_path_part_line_constructor
+use integration_path_part_custom_curve, only: &
+  integration_path_part_custom_curve_obj, integration_path_part_custom_curve_constructor
 
 
 
@@ -179,6 +181,7 @@ private
   public :: integration_path_part_parallel_Im_constructor
   public :: integration_path_part_parallel_Re_constructor
   public :: integration_path_part_line_constructor
+  public :: integration_path_part_custom_curve_constructor
 
 
 

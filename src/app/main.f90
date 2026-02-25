@@ -20,6 +20,18 @@ implicit none (type, external)
 
   print *, sin((- 1d0, 0d0)) - sin((- 1d0, - 3d0)), sin((0d0, 1d0)) - sin((0d0, 2d0))
 
+  print *, "_________________________________________________________________"
+  block
+    real(dp) :: x
+
+    x = 0d0
+    do while (x < 6.28d0)
+      print *, x, log(exp((0d0, 1d0) * x))
+
+      x = x + 1d-2
+    end do
+  end block
+
   ! call test()
 
   ! call assert(1.0d0 >= 0.0_dp)

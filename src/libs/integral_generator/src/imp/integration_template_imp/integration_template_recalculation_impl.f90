@@ -42,7 +42,7 @@ implicit none (type, external)
       func, a, b, &
       integration_element, &
       eps, &
-      normilized_delta &
+      normalized_delta &
     ) result(res)
   implicit none (type, external)
     class(integration_template_recalculation_obj), intent(inout) :: this
@@ -52,7 +52,7 @@ implicit none (type, external)
     class(integration_element_obj), intent(inout) :: integration_element
     !> required accuracy
     real(dp), intent(in) :: eps
-    procedure(normilized_delta_type), optional :: normilized_delta
+    procedure(normalized_delta_type), optional :: normalized_delta
   !module procedure run
     real(dp) :: max_step_half
 
@@ -75,28 +75,55 @@ implicit none (type, external)
         x = a
         h = init_step
         do while (x < b)
-          int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
-          int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
-          int_elem_2 = int_elem_2 + &
-            integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
+          if (present(normalized_delta)) then
+            int_elem_1 = &
+              integration_element%run(func, x, x + min(h + h, b - x)) * &
+              normalized_delta(x = x, dx = min(h + h, b - x))
+            int_elem_2 = &
+              integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0) * &
+              normalized_delta(x = x, dx = min(h + h, b - x) * 0.5d0)
+            int_elem_2 = int_elem_2 + &
+              integration_element%run( &
+                func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x) &
+              ) * normalized_delta( &
+                x = x + min(h + h, b - x) * 0.5d0, &
+                dx = min(h + h, b - x) * 0.5d0 &
+              )
+          else
+            int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
+            int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
+            int_elem_2 = int_elem_2 + &
+              integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
+          end if
           current_eps = abs(int_elem_2 - int_elem_1) * 1.5d0
 
           do while (h >= min_step .and. current_eps > eps)
             h = h * 0.5d0
 
-            int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
-            int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
-            int_elem_2 = int_elem_2 + &
-              integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
+            if (present(normalized_delta)) then
+              int_elem_1 = &
+                integration_element%run(func, x, x + min(h + h, b - x)) * &
+                normalized_delta(x = x, dx = min(h + h, b - x))
+              int_elem_2 = &
+                integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0) * &
+                normalized_delta(x = x, dx = min(h + h, b - x) * 0.5d0)
+              int_elem_2 = int_elem_2 + &
+                integration_element%run( &
+                  func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x) &
+                ) * normalized_delta( &
+                  x = x + min(h + h, b - x) * 0.5d0, &
+                  dx = min(h + h, b - x) * 0.5d0 &
+                )
+            else
+              int_elem_1 = integration_element%run(func, x, x + min(h + h, b - x))
+              int_elem_2 = integration_element%run(func, x, x + min(h + h, b - x) * 0.5d0)
+              int_elem_2 = int_elem_2 + &
+                integration_element%run(func, x + min(h + h, b - x) * 0.5d0, x + min(h + h, b - x))
+            end if
             current_eps = abs(int_elem_2 - int_elem_1) * 1.5d0
           end do
 
-          ! if (x + h + h > b) int_elem_2 = integration_element%run(func, x, b)
-          if (present(normilized_delta)) then
-            res = res + int_elem_2 * normilized_delta(x = x, dx = min(h + h, b - x))
-          else
-            res = res + int_elem_2
-          end if
+          res = res + int_elem_2
           x = x + min(h + h, b - x)
 
           if (current_eps < eps + eps + eps) h = min(max_step_half, h + h)

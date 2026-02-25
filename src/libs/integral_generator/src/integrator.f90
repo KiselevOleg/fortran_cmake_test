@@ -7,7 +7,7 @@ module integrator
 use integration_template, only: integration_template_obj
 use integration_path_part, only: &
   integration_path_part_obj, &
-  integrated_function_type, projection_function_type, normilized_delta_type
+  integrated_function_type, projection_function_type, normalized_delta_type
 use integration_element, only: integration_element_obj
 use, intrinsic :: iso_fortran_env, only: sp => real32, dp => real64, qp => real128, &
   i1 => int8, i2 => int16, i4 => int32, i8 => int64

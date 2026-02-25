@@ -1,13 +1,15 @@
 @test
 module integration_path_part_test
 use integral_generator___integration_path_part, only: integration_path_part_obj, &
-  integrated_function_type, projection_function_type, normilized_delta_type
+  integrated_function_type, projection_function_type, normalized_delta_type
 use integral_generator___integration_path_part_parallel_Re, only: &
   integration_path_part_parallel_Re_obj, integration_path_part_parallel_Re_constructor
 use integral_generator___integration_path_part_parallel_Im, only: &
   integration_path_part_parallel_Im_obj, integration_path_part_parallel_Im_constructor
 use integral_generator___integration_path_part_line, only: &
   integration_path_part_line_obj, integration_path_part_line_constructor
+use integral_generator___integration_path_part_custom_curve, only: &
+  integration_path_part_custom_curve_obj, integration_path_part_custom_curve_constructor
 use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_signaling_nan, &
   ieee_is_nan
 use PFUnit, only: &
@@ -62,7 +64,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (1d0, 0d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -111,7 +113,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (- 1d0, 0d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -175,7 +177,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (0d0, 1d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -224,7 +226,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (0d0, - 1d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -288,7 +290,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (1d0, 0d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -337,7 +339,7 @@ contains
           do while (x < part%end_projection_point())
             call assertEqual(&
               expected = (0d0, - 1d0), &
-              actual = part%normilized_delta(x = x, dx = dx), &
+              actual = part%normalized_delta(x = x, dx = dx), &
               tolerance = 1d-15, &
               message = "incorrect result" &
             )
@@ -387,7 +389,7 @@ contains
             associate (norm_dir => (3d0, 2d0) / abs((3d0, 2d0)))
               call assertEqual(&
                 expected = norm_dir, &
-                actual = part%normilized_delta(x = x, dx = dx), &
+                actual = part%normalized_delta(x = x, dx = dx), &
                 tolerance = 1d-15, &
                 message = "incorrect result" &
               )

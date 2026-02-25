@@ -19,18 +19,18 @@ implicit none (type, external)
         b = this%part(i)%path_part%end_projection_point(), &
         integration_element = this%part(i)%integrate_element, &
         eps = this%eps, &
-        normilized_delta = normilized_delta_func &
+        normalized_delta = normalized_delta_func &
       )
     end do
 
     contains
-    pure complex(dp) function normilized_delta_func(x, dx) result(res)
+    pure complex(dp) function normalized_delta_func(x, dx) result(res)
     implicit none (type, external)
       real(dp), intent(in) :: x
       real(dp), intent(in) :: dx
 
-      res = this%part(i)%path_part%normilized_delta(x = x, dx = dx)
-    end function normilized_delta_func
+      res = this%part(i)%path_part%normalized_delta(x = x, dx = dx)
+    end function normalized_delta_func
     recursive complex(dp) function projection_func(x) result(res)
     implicit none (type, external)
       real(dp), intent(in) :: x
