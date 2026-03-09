@@ -4,10 +4,14 @@ This project require and supports only gfortran.
 
 ## fast copy
 
+clear and rebuild
+
 ```bash
+# clear
 clear
 rm -fr ./build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+# rebuild
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build --target all
 clear
 cmake --build build --target lint
@@ -15,16 +19,16 @@ cmake --build build --target test_extended
 cmake --build build --target project_docs
 ```
 
+run
+
 ```bash
-clear
-rm -fr ./build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --target all lint test_extended project_docs
 ./build/main
 ```
 
+creating dependency graph
+
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release --graphviz=./build/depends.dot
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release --graphviz=./build/depends.dot
 dot -Tpng -o build/depends.png build/depends.dot //install graphviz
 ```
 
@@ -54,6 +58,19 @@ cmake --version
 # pacman
 sudo pacman -S cmake
 cmake --version
+```
+
+ninja 1.13+
+
+``` bash
+# apt
+sudo apt update
+sudo apt install -y ninja-build
+cmake --version
+
+# pacman
+sudo pacman -S extra/ninja
+ninja --version
 ```
 
 mpi 5+
@@ -101,8 +118,8 @@ sudo pacman -S extra/graphviz
 compilation
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release
 ```
 
 list of all targets
@@ -124,7 +141,7 @@ for f in ./cmake/add_dependencies_scripts/*.sh; do bash "$f"; done
 or
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=OFF
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=OFF
 cmake --build build --target all_external_dependencies_install
 ```
 
@@ -176,7 +193,7 @@ rm -fr ./build
 create a dependency graph at ./build/depends.png
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release --graphviz=./build/depends.dot
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release --graphviz=./build/depends.dot
 dot -Tpng -o build/depends.png build/depends.dot //install graphviz
 ```
 

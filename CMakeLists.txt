@@ -3,9 +3,9 @@
 # =========================
 
 #################### INIT ##############################
-# cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-# cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-# cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+# cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release
+# cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug
+# cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
 #################### USE_GENERATED_BY_CMAKE_PROJECT ##############################
 # cmake --build build
 # cmake --build build --target help

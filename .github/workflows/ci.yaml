@@ -29,6 +29,10 @@ jobs:
         with:
           # version: '4.2.2'
           version: '3.24'
+      - name: Setup ninja
+        run: |
+          sudo apt update
+          sudo apt install -y ninja-build
 
       - name: Install openmp (required for fpunit)
         run: |
@@ -58,16 +62,17 @@ jobs:
       #install external dependencies
       - name: external dependencies
         run: |
-          # cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=OFF
+          # cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=OFF
           # cmake --build build --target all_external_dependencies_install
           for f in ./cmake/add_dependencies_scripts/*.sh; do bash "$f"; done
 
       # Build and test project
       - name: Build and Test
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+          cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug
 
-          cmake --build build --target all lint test_extended
+          cmake --build build --target all
+          cmake --build build --target lint test_extended
 
 
 
