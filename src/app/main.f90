@@ -32,6 +32,12 @@ implicit none (type, external)
     end do
   end block
 
+  block
+    integer(i4) :: i, j
+
+    print *, maxval([(sum([(1d0, j = 1, 100)]), i = 1, 100)])
+  end block
+
   ! call test()
 
   ! call assert(1.0d0 >= 0.0_dp)

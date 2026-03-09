@@ -46,6 +46,15 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: ./external_dependencies
+          key: ${{ runner.os }}-external-deps-${{ hashFiles(
+              'cmake/add_dependencies_scripts/**'
+            ) }}
+          restore-keys: |
+            ${{ runner.os }}-external-deps-
       #install external dependencies
       - name: external dependencies
         run: |
