@@ -65,6 +65,8 @@ include(cmake/tests.cmake)
 # SUB_DIRECTORIES
 # ==========================================================
 
+add_subdirectory(external_dependencies/json-fortran)
+
 add_subdirectory(src/libs/system)
 add_subdirectory(src/libs/integral_generator)
 add_subdirectory(src/libs/static_library_1)
